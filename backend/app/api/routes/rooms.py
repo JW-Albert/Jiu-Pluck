@@ -9,9 +9,9 @@ from app.models.event import Event
 from app.schemas.room import (
     RoomCreate,
     RoomResponse,
-    RoomInviteRequest,
-    MessageResponse
+    RoomInviteRequest
 )
+from app.schemas.auth import MessageResponse
 from app.schemas.event import (
     PrivateEventCreate,
     EventResponse,
@@ -20,7 +20,7 @@ from app.schemas.event import (
 )
 from app.services.room_service import create_room, get_user_rooms, get_room_detail
 from app.services.event_service import create_private_event, vote_event, get_event_vote_stats
-from app.services.discord_service import send_event_notification
+from app.services.discord_service import send_event_notification, send_room_notification
 import json
 
 router = APIRouter()

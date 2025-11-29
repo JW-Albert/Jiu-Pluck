@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.schemas.calendar import GoogleAuthResponse, CalendarStatusResponse, MessageResponse
+from app.schemas.calendar import GoogleAuthResponse, CalendarStatusResponse
+from app.schemas.auth import MessageResponse
 from app.core.config import settings
 
 # TODO: 實作 Google OAuth

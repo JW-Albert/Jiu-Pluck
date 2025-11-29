@@ -9,9 +9,9 @@ from app.schemas.event import (
     EventResponse,
     EventVoteRequest,
     EventVoteResponse,
-    EventAttendee,
-    MessageResponse
+    EventAttendee
 )
+from app.schemas.auth import MessageResponse
 from app.services.event_service import (
     create_private_event,
     create_public_event,
