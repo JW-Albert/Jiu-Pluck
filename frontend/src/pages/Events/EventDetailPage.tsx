@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { eventsApi } from '../../api/events'
 import { useAuthStore } from '../../hooks/useAuthStore'
 import { useCurrentUser } from '../../api/users'
-import { useState } from 'react'
 
 export default function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -67,22 +66,6 @@ export default function EventDetailPage() {
 
   // 判斷是否為私人活動（房間活動）
   const isPrivateEvent = event.public === 0 && event.room_id
-
-  // 獲取用戶的投票（如果是私人活動）
-  const { data: userVote } = useQuery({
-    queryKey: ['user-vote', eventId, currentUser?.id],
-    queryFn: async () => {
-      if (!isPrivateEvent || !event.room_id || !currentUser) return null
-      try {
-        // 從事件詳情中獲取投票統計，但我們需要知道用戶的投票
-        // 暫時從後端獲取，如果後端沒有提供，我們可以通過檢查 attendees 或創建新的 API
-        return null
-      } catch {
-        return null
-      }
-    },
-    enabled: !!isPrivateEvent && !!currentUser,
-  })
 
   const voteMutation = useMutation({
     mutationFn: async (vote: 'yes' | 'no' | 'maybe') => {
