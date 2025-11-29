@@ -129,9 +129,27 @@ cd $BACKEND_DIR
 if [ ! -d "venv" ]; then
     echo "建立 Python 虛擬環境..."
     python3 -m venv venv
+    
+    # 驗證虛擬環境是否建立成功
+    if [ ! -d "venv" ] || [ ! -f "venv/bin/activate" ]; then
+        echo "錯誤: 虛擬環境建立失敗"
+        exit 1
+    fi
+    echo "虛擬環境建立成功"
 fi
 
 # 啟動虛擬環境
+if [ ! -f "venv/bin/activate" ]; then
+    echo "錯誤: 找不到 venv/bin/activate，虛擬環境可能損壞"
+    echo "嘗試重新建立虛擬環境..."
+    rm -rf venv
+    python3 -m venv venv
+    if [ ! -f "venv/bin/activate" ]; then
+        echo "錯誤: 無法建立虛擬環境"
+        exit 1
+    fi
+fi
+
 source venv/bin/activate
 
 # 升級 pip
