@@ -8,15 +8,92 @@ echo "=========================================="
 echo "Jiu-Pluck 生產環境部署"
 echo "=========================================="
 
-# 檢查必要命令
+# 檢查並安裝 Python3
 if ! command -v python3 &> /dev/null; then
-    echo "錯誤: 未找到 python3"
-    exit 1
+    echo "未找到 python3，嘗試自動安裝..."
+    
+    # 檢測系統類型並安裝
+    if command -v apt-get &> /dev/null; then
+        # Debian/Ubuntu
+        echo "偵測到 Debian/Ubuntu 系統，使用 apt-get 安裝 Python3..."
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip python3-venv
+    elif command -v yum &> /dev/null; then
+        # CentOS/RHEL
+        echo "偵測到 CentOS/RHEL 系統，使用 yum 安裝 Python3..."
+        sudo yum install -y python3 python3-pip
+    elif command -v dnf &> /dev/null; then
+        # Fedora
+        echo "偵測到 Fedora 系統，使用 dnf 安裝 Python3..."
+        sudo dnf install -y python3 python3-pip
+    elif command -v brew &> /dev/null; then
+        # macOS
+        echo "偵測到 macOS 系統，使用 Homebrew 安裝 Python3..."
+        brew install python3
+    elif command -v pacman &> /dev/null; then
+        # Arch Linux
+        echo "偵測到 Arch Linux 系統，使用 pacman 安裝 Python3..."
+        sudo pacman -S --noconfirm python python-pip
+    else
+        echo "無法自動安裝 Python3，請手動安裝："
+        echo "  - Ubuntu/Debian: sudo apt-get install python3 python3-pip python3-venv"
+        echo "  - CentOS/RHEL: sudo yum install python3 python3-pip"
+        echo "  - macOS: brew install python3"
+        echo "  - 或訪問 https://www.python.org/ 下載安裝"
+        exit 1
+    fi
+    
+    # 驗證安裝
+    if ! command -v python3 &> /dev/null; then
+        echo "錯誤: Python3 安裝失敗，請手動安裝"
+        exit 1
+    fi
+    
+    echo "Python3 安裝成功: $(python3 --version)"
 fi
 
+# 檢查並安裝 Node.js
 if ! command -v node &> /dev/null; then
-    echo "錯誤: 未找到 node"
-    exit 1
+    echo "未找到 node，嘗試自動安裝..."
+    
+    # 檢測系統類型並安裝
+    if command -v apt-get &> /dev/null; then
+        # Debian/Ubuntu
+        echo "偵測到 Debian/Ubuntu 系統，使用 apt-get 安裝 Node.js..."
+        sudo apt-get update
+        sudo apt-get install -y nodejs npm
+    elif command -v yum &> /dev/null; then
+        # CentOS/RHEL
+        echo "偵測到 CentOS/RHEL 系統，使用 yum 安裝 Node.js..."
+        sudo yum install -y nodejs npm
+    elif command -v dnf &> /dev/null; then
+        # Fedora
+        echo "偵測到 Fedora 系統，使用 dnf 安裝 Node.js..."
+        sudo dnf install -y nodejs npm
+    elif command -v brew &> /dev/null; then
+        # macOS
+        echo "偵測到 macOS 系統，使用 Homebrew 安裝 Node.js..."
+        brew install node
+    elif command -v pacman &> /dev/null; then
+        # Arch Linux
+        echo "偵測到 Arch Linux 系統，使用 pacman 安裝 Node.js..."
+        sudo pacman -S --noconfirm nodejs npm
+    else
+        echo "無法自動安裝 Node.js，請手動安裝："
+        echo "  - Ubuntu/Debian: sudo apt-get install nodejs npm"
+        echo "  - CentOS/RHEL: sudo yum install nodejs npm"
+        echo "  - macOS: brew install node"
+        echo "  - 或訪問 https://nodejs.org/ 下載安裝"
+        exit 1
+    fi
+    
+    # 驗證安裝
+    if ! command -v node &> /dev/null; then
+        echo "錯誤: Node.js 安裝失敗，請手動安裝"
+        exit 1
+    fi
+    
+    echo "Node.js 安裝成功: $(node --version)"
 fi
 
 # 設定變數
