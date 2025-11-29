@@ -10,6 +10,23 @@ echo "=========================================="
 echo "Jiu-Pluck 開發環境啟動"
 echo "=========================================="
 
+# 建立 ENV 目錄（如果不存在）- 在專案根目錄
+if [ ! -d "ENV" ]; then
+    mkdir -p ENV
+fi
+
+# 檢查 ENV/.env 檔案（在專案根目錄）
+if [ ! -f "ENV/.env" ]; then
+    echo "警告: 未找到 ENV/.env 檔案，從 backend/.env.example 複製..."
+    if [ -f "backend/.env.example" ]; then
+        cp backend/.env.example ENV/.env
+        echo "請編輯 ENV/.env 檔案，至少設定 APP_SECRET_KEY"
+    else
+        echo "錯誤: 未找到 backend/.env.example 檔案"
+        exit 1
+    fi
+fi
+
 # 啟動 Backend
 echo ""
 echo "啟動 Backend..."
@@ -17,23 +34,6 @@ cd backend
 
 # 啟動虛擬環境
 source venv/bin/activate
-
-    # 建立 ENV 目錄（如果不存在）
-    if [ ! -d "ENV" ]; then
-        mkdir -p ENV
-    fi
-    
-    # 檢查 .env 檔案
-    if [ ! -f "ENV/.env" ]; then
-        echo "警告: 未找到 ENV/.env 檔案，從 .env.example 複製..."
-        if [ -f ".env.example" ]; then
-            cp .env.example ENV/.env
-            echo "請編輯 backend/ENV/.env 檔案，至少設定 APP_SECRET_KEY"
-        else
-            echo "錯誤: 未找到 .env.example 檔案"
-            exit 1
-        fi
-    fi
 
 # 在背景啟動 Backend
 echo "啟動 FastAPI 伺服器 (http://localhost:8000)..."

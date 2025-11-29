@@ -67,13 +67,13 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. 建立 ENV 目錄並複製環境變數檔案：
+4. 在專案根目錄建立 ENV 目錄並複製環境變數檔案：
 ```bash
 mkdir -p ENV
-cp .env.example ENV/.env
+cp backend/.env.example ENV/.env
 ```
 
-5. 編輯 `ENV/.env` 檔案，設定必要的環境變數（至少設定 `APP_SECRET_KEY`）
+5. 編輯 `ENV/.env` 檔案（在專案根目錄），設定必要的環境變數（至少設定 `APP_SECRET_KEY`）
 
 6. 啟動伺服器：
 ```bash
@@ -119,13 +119,17 @@ deploy.bat
 部署腳本會：
 - 安裝所有依賴
 - 建置 Frontend 生產版本
-- 產生生產環境啟動腳本
-- 產生 systemd service 和 Nginx 設定檔範例
 
 ## 專案結構
 
 ```
 .
+├── ENV/
+│   └── .env              # 環境變數檔案（在專案根目錄）
+├── boot/
+│   ├── start_production.sh      # 生產環境啟動腳本
+│   ├── setup_service.sh         # 開機自動啟動設定腳本
+│   └── jiu-pluck.service        # systemd service 檔案
 ├── backend/
 │   ├── app/
 │   │   ├── api/          # API 路由
@@ -135,9 +139,7 @@ deploy.bat
 │   │   ├── services/     # 業務邏輯
 │   │   └── main.py       # FastAPI 應用入口
 │   ├── requirements.txt
-│   ├── .env.example
-│   └── ENV/
-│       └── .env
+│   └── .env.example
 │
 └── frontend/
     ├── src/
@@ -152,7 +154,7 @@ deploy.bat
 
 ## 環境變數說明
 
-### Backend (.env)
+### Backend (ENV/.env)
 
 - `APP_SECRET_KEY`: JWT 簽章金鑰（必須）
 - `DATABASE_URL`: 資料庫連線字串
@@ -161,7 +163,7 @@ deploy.bat
 
 詳細說明請參考 `backend/.env.example`
 
-**注意**: 環境變數檔案應放在 `backend/ENV/.env`，而不是 `backend/.env`
+**注意**: 環境變數檔案應放在專案根目錄的 `ENV/.env`，而不是 `backend/.env`
 
 ## 開發注意事項
 
@@ -174,6 +176,8 @@ deploy.bat
 3. **Email 驗證**：開發環境下，驗證碼會直接印在 console，生產環境需要設定 SMTP。
 
 4. **Discord Webhook**：需要在 Discord 伺服器建立 Webhook，並將 URL 設定到房間中。
+
+5. **開機自動啟動**：執行 `sudo ./boot/setup_service.sh` 設定 systemd 服務，服務將在開機時自動啟動。
 
 ## TODO
 

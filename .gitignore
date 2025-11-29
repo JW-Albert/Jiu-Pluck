@@ -7,6 +7,18 @@ backend/.env
 backend/*.db
 backend/app.db
 
+# Environment variables (專案根目錄)
+# 忽略 ENV 目錄中的實際環境變數檔案，但允許範例檔案和目錄結構
+ENV/.env
+ENV/*
+!ENV/.env.example
+!ENV/.gitkeep
+!ENV/README.md
+
+# 確保所有 .env.example 檔案都可以被追蹤（無論在哪個目錄）
+!.env.example
+!**/.env.example
+
 # Frontend
 frontend/node_modules/
 frontend/dist/

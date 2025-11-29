@@ -1,0 +1,16 @@
+[Unit]
+Description=Jiu-Pluck API Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=PROJECT_ROOT/backend
+Environment="PATH=PROJECT_ROOT/backend/venv/bin"
+ExecStart=PROJECT_ROOT/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

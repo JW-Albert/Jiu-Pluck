@@ -29,6 +29,11 @@ echo "=========================================="
 echo "步驟 1: 部署 Backend"
 echo "=========================================="
 
+# 建立 ENV 目錄（如果不存在）- 在專案根目錄
+if [ ! -d "ENV" ]; then
+    mkdir -p ENV
+fi
+
 cd $BACKEND_DIR
 
 # 建立虛擬環境的函數
@@ -73,15 +78,14 @@ pip install --upgrade pip
 echo "安裝 Python 依賴..."
 pip install -r requirements.txt
 
-# 建立 ENV 目錄（如果不存在）
-if [ ! -d "ENV" ]; then
-    mkdir -p ENV
-fi
+cd ..
 
-# 檢查 .env 檔案
+# 檢查 ENV/.env 檔案（在專案根目錄）
 if [ ! -f "ENV/.env" ]; then
     echo "錯誤: 未找到 ENV/.env 檔案，請先建立並設定環境變數"
-    echo "可以從 .env.example 複製: cp .env.example ENV/.env"
+    if [ -f "$BACKEND_DIR/.env.example" ]; then
+        echo "可以從 backend/.env.example 複製: cp backend/.env.example ENV/.env"
+    fi
     exit 1
 fi
 
@@ -89,6 +93,8 @@ fi
 if ! grep -q "APP_SECRET_KEY=.*[^=]$" ENV/.env 2>/dev/null || grep -q "APP_SECRET_KEY=change_me" ENV/.env 2>/dev/null; then
     echo "警告: APP_SECRET_KEY 未設定或使用預設值，請在 ENV/.env 中設定安全的密鑰"
 fi
+
+cd $BACKEND_DIR
 
 # 初始化資料庫（如果需要）
 echo "初始化資料庫..."
@@ -133,100 +139,16 @@ echo "Frontend 建置完成: $BUILD_DIR/"
 
 cd ..
 
-# 3. 產生啟動腳本
-echo ""
-echo "=========================================="
-echo "步驟 3: 產生生產環境啟動腳本"
-echo "=========================================="
-
-cat > start_production.sh << 'EOF'
-#!/bin/bash
-
-# 生產環境啟動腳本
-
-set -e
-
-cd backend
-source venv/bin/activate
-
-# 使用 uvicorn 啟動（生產模式）
-exec uvicorn app.main:app \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --workers 4 \
-    --log-level info
-EOF
-
-chmod +x start_production.sh
-
-# 4. 產生 systemd service 檔案範例（可選）
-echo ""
-echo "=========================================="
-echo "步驟 4: 產生 systemd service 檔案範例"
-echo "=========================================="
-
-cat > jiu-pluck.service.example << EOF
-[Unit]
-Description=Jiu-Pluck API Server
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=$(pwd)/backend
-Environment="PATH=$(pwd)/backend/venv/bin"
-ExecStart=$(pwd)/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-echo "已產生 systemd service 檔案範例: jiu-pluck.service.example"
-echo "如需使用，請複製到 /etc/systemd/system/ 並修改設定"
-
-# 5. 產生 Nginx 設定檔範例（可選）
-echo ""
-echo "=========================================="
-echo "步驟 5: 產生 Nginx 設定檔範例"
-echo "=========================================="
-
-cat > nginx.conf.example << 'EOF'
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # Frontend (靜態檔案)
-    location / {
-        root /path/to/Jiu-Pluck/frontend/dist;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Backend API
-    location /api {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-EOF
-
-echo "已產生 Nginx 設定檔範例: nginx.conf.example"
-
-# 6. 完成
+# 3. 完成
 echo ""
 echo "=========================================="
 echo "部署完成！"
 echo "=========================================="
 echo ""
 echo "下一步："
-echo "1. 檢查 backend/ENV/.env 檔案設定"
-echo "2. 執行 ./start_production.sh 啟動服務"
-echo "3. 或使用 systemd service (參考 jiu-pluck.service.example)"
-echo "4. 設定 Nginx (參考 nginx.conf.example)"
+echo "1. 檢查 ENV/.env 檔案設定（在專案根目錄）"
+echo "2. 執行 ./boot/start_production.sh 啟動服務（手動啟動）"
+echo "3. 或執行 sudo ./boot/setup_service.sh 設定開機自動啟動（需要 boot/jiu-pluck.service 檔案）"
 echo ""
 echo "Backend API: http://localhost:8000"
 echo "Frontend: 建置在 frontend/dist/ 目錄"

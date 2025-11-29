@@ -23,7 +23,6 @@ wheels/
 app.db
 *.db
 .env
-ENV/
 .pytest_cache/
 .coverage
 htmlcov/

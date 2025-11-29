@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     GOOGLE_CALENDAR_SCOPES: str = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly"
 
     class Config:
-        env_file = "ENV/.env"
+        env_file = "../ENV/.env"  # ENV 資料夾在專案根目錄（相對於 backend/ 目錄）
         case_sensitive = True
 
 
