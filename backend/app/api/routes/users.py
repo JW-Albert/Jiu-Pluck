@@ -16,6 +16,8 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         "school": current_user.school,
         "major": current_user.major,
         "email_verified": bool(current_user.email_verified),
+        "is_admin": bool(current_user.is_admin),
+        "is_active": bool(current_user.is_active),
         "created_at": current_user.created_at,
         "updated_at": current_user.updated_at
     }

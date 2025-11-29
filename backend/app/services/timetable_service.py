@@ -2,13 +2,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import json
 from typing import List, Dict
+from datetime import datetime
 from app.models.timetable import Timetable, TimetableTemplate
 from app.schemas.timetable import TimetableData, FreeSlot
 
 
 async def get_templates(db: AsyncSession) -> List[Dict]:
-    """取得所有課表模板"""
-    result = await db.execute(select(TimetableTemplate))
+    """取得所有已通過審核的課表模板"""
+    result = await db.execute(
+        select(TimetableTemplate)
+        .where(TimetableTemplate.status == "approved")
+    )
     templates = result.scalars().all()
     
     return [
@@ -16,10 +20,51 @@ async def get_templates(db: AsyncSession) -> List[Dict]:
             "id": t.id,
             "school": t.school,
             "name": t.name,
-            "periods": json.loads(t.periods_json)
+            "periods": json.loads(t.periods_json),
+            "created_by": t.created_by,
+            "status": t.status,
+            "submitted_at": t.submitted_at,
+            "reviewed_at": t.reviewed_at,
+            "reviewed_by": t.reviewed_by,
+            "created_at": t.created_at,
+            "updated_at": t.updated_at
         }
         for t in templates
     ]
+
+
+async def submit_template(
+    db: AsyncSession,
+    user_id: str,
+    school: str,
+    name: str,
+    periods: List[Dict]
+) -> Dict:
+    """提交課表模板供審核"""
+    periods_json = json.dumps(periods)
+    
+    template = TimetableTemplate(
+        school=school,
+        name=name,
+        periods_json=periods_json,
+        created_by=user_id,
+        status="pending",
+        submitted_at=datetime.utcnow()
+    )
+    
+    db.add(template)
+    await db.commit()
+    await db.refresh(template)
+    
+    return {
+        "id": template.id,
+        "school": template.school,
+        "name": template.name,
+        "periods": json.loads(template.periods_json),
+        "created_by": template.created_by,
+        "status": template.status,
+        "submitted_at": template.submitted_at
+    }
 
 
 async def save_timetable(db: AsyncSession, user_id: str, data: TimetableData) -> Dict:

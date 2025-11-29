@@ -1,11 +1,32 @@
 import apiClient from './client'
 
+export interface PeriodTemplate {
+  name: string
+  start: string
+  end: string
+}
+
 export interface TimetableTemplate {
   id: number
   school: string
   name: string
-  periods: Array<{ name: string; start: string; end: string }>
+  periods: PeriodTemplate[]
+  created_by?: string
+  status?: string
+  submitted_at?: string
+  reviewed_at?: string
+  reviewed_by?: string
+  created_at?: string
+  updated_at?: string
 }
+
+export interface TimetableTemplateCreate {
+  school: string
+  name: string
+  periods: PeriodTemplate[]
+}
+
+export type TimetableTemplateResponse = TimetableTemplate
 
 export interface TimetableData {
   monday?: Array<{ period: string; course: string }>
@@ -46,6 +67,11 @@ export const timetableApi = {
 
   getFreeSlots: async (weekday: string): Promise<{ weekday: string; slots: FreeSlot[] }> => {
     const response = await apiClient.get(`/timetable/free-slots?weekday=${weekday}`)
+    return response.data
+  },
+
+  submitTemplate: async (data: TimetableTemplateCreate): Promise<TimetableTemplate> => {
+    const response = await apiClient.post('/timetable/templates/submit', data)
     return response.data
   },
 }

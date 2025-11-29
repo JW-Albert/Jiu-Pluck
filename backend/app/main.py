@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import auth, users, timetable, rooms, events, webhooks, calendar_google, calendar_apple
+from app.api.routes import auth, users, timetable, rooms, events, webhooks, calendar_google, calendar_apple, admin
 from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.config import settings
 from app.models.user import User
@@ -27,6 +27,7 @@ app.include_router(events.router, prefix="/api/events", tags=["events"])
 app.include_router(webhooks.router, prefix="/api/rooms", tags=["webhooks"])
 app.include_router(calendar_google.router, prefix="/api/calendar/google", tags=["calendar-google"])
 app.include_router(calendar_apple.router, prefix="/api/calendar/apple", tags=["calendar-apple"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 
 @app.on_event("startup")
@@ -52,17 +53,20 @@ async def startup():
                     password_hash="",  # No password, uses OTP
                     name="Admin",
                     is_active=1,
-                    email_verified=1  # Admin email is pre-verified
+                    email_verified=1,  # Admin email is pre-verified
+                    is_admin=1  # 設定為管理員
                 )
                 
                 db.add(admin_user)
                 await db.commit()
                 print(f"Admin account created: {settings.ADMIN_EMAIL}")
             else:
-                # Ensure admin email is verified
+                # Ensure admin email is verified and is_admin is set
                 if not admin_user.email_verified:
                     admin_user.email_verified = 1
-                    await db.commit()
+                if not admin_user.is_admin:
+                    admin_user.is_admin = 1
+                await db.commit()
                 print(f"Admin account already exists: {settings.ADMIN_EMAIL}")
 
 

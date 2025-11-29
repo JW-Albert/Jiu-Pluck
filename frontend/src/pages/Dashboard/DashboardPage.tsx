@@ -2,8 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { roomsApi } from '../../api/rooms'
 import { eventsApi } from '../../api/events'
+import { useCurrentUser } from '../../api/users'
 
 export default function DashboardPage() {
+  const { data: user, isLoading: userLoading } = useCurrentUser()
   const { data: rooms, isLoading: roomsLoading } = useQuery({
     queryKey: ['rooms'],
     queryFn: roomsApi.getRooms,
@@ -16,7 +18,16 @@ export default function DashboardPage() {
 
   return (
     <div className="px-4 py-6 sm:px-0">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">儀表板</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">儀表板</h1>
+        {userLoading ? (
+          <p className="text-gray-500 mt-2">載入中...</p>
+        ) : user ? (
+          <p className="text-lg text-gray-600 mt-2">
+            歡迎，{user.name || user.email}！
+          </p>
+        ) : null}
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 我的房間 */}

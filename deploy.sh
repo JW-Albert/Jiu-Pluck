@@ -91,6 +91,9 @@ cd $BACKEND_DIR
 
 # 初始化資料庫（如果需要）
 echo "初始化資料庫..."
+
+rm -f app.db
+
 python -c "
 from app.core.database import engine, Base
 import asyncio

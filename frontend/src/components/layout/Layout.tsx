@@ -1,8 +1,10 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../hooks/useAuthStore'
+import { useCurrentUser } from '../../api/users'
 
 export default function Layout() {
   const { clearTokens, accessToken } = useAuthStore()
+  const { data: user } = useCurrentUser()
   const isAuthenticated = !!accessToken
   const navigate = useNavigate()
 
@@ -51,6 +53,14 @@ export default function Layout() {
                 >
                   設定
                 </Link>
+                {user?.is_admin && (
+                  <Link
+                    to="/admin"
+                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-red-600 hover:text-red-700"
+                  >
+                    管理
+                  </Link>
+                )}
               </div>
             </div>
             <div className="flex items-center">

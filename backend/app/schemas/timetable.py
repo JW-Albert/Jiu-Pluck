@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Dict, Optional
-from datetime import time
+from datetime import time, datetime
 
 
 class PeriodTemplate(BaseModel):
@@ -14,6 +14,23 @@ class TimetableTemplateResponse(BaseModel):
     school: str
     name: str
     periods: List[PeriodTemplate]
+    created_by: Optional[str] = None
+    status: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class TimetableTemplateCreate(BaseModel):
+    school: str
+    name: str
+    periods: List[PeriodTemplate]
+
+
+class TimetableTemplateReview(BaseModel):
+    status: str  # "approved" or "rejected"
 
 
 class TimetableData(BaseModel):

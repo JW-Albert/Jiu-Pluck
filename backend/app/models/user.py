@@ -16,6 +16,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     is_active = Column(Integer, default=1)
     email_verified = Column(Integer, default=0)
+    is_admin = Column(Integer, default=0)  # 0=一般使用者, 1=管理員
 
 
 class EmailVerificationCode(Base):

@@ -7,13 +7,15 @@ from app.schemas.timetable import (
     TimetableTemplateResponse,
     TimetableCreate,
     TimetableResponse,
-    FreeSlotsResponse
+    FreeSlotsResponse,
+    TimetableTemplateCreate
 )
 from app.services.timetable_service import (
     get_templates,
     save_timetable,
     get_timetable,
-    get_free_slots
+    get_free_slots,
+    submit_template
 )
 
 router = APIRouter()
@@ -21,9 +23,50 @@ router = APIRouter()
 
 @router.get("/templates", response_model=list[TimetableTemplateResponse])
 async def get_timetable_templates(db: AsyncSession = Depends(get_db)):
-    """取得課表模板"""
+    """取得已通過審核的課表模板"""
     templates = await get_templates(db)
-    return templates
+    return [
+        TimetableTemplateResponse(
+            id=t["id"],
+            school=t["school"],
+            name=t["name"],
+            periods=t["periods"],
+            created_by=t.get("created_by"),
+            status=t.get("status"),
+            submitted_at=t.get("submitted_at"),
+            reviewed_at=t.get("reviewed_at"),
+            reviewed_by=t.get("reviewed_by"),
+            created_at=t.get("created_at"),
+            updated_at=t.get("updated_at")
+        )
+        for t in templates
+    ]
+
+
+@router.post("/templates/submit", response_model=TimetableTemplateResponse)
+async def submit_timetable_template(
+    template_data: TimetableTemplateCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """提交課表模板供管理員審核"""
+    result = await submit_template(
+        db,
+        current_user.id,
+        template_data.school,
+        template_data.name,
+        [p.dict() for p in template_data.periods]
+    )
+    
+    return TimetableTemplateResponse(
+        id=result["id"],
+        school=result["school"],
+        name=result["name"],
+        periods=result["periods"],
+        created_by=result["created_by"],
+        status=result["status"],
+        submitted_at=result["submitted_at"]
+    )
 
 
 @router.post("", response_model=TimetableResponse)

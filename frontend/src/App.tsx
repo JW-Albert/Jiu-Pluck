@@ -9,6 +9,7 @@ import RoomDetailPage from './pages/Rooms/RoomDetailPage'
 import PublicEventsPage from './pages/Events/PublicEventsPage'
 import EventDetailPage from './pages/Events/EventDetailPage'
 import CalendarSettingsPage from './pages/Settings/CalendarSettingsPage'
+import AdminPage from './pages/Admin/AdminPage'
 import Layout from './components/layout/Layout'
 import { useAuthStore } from './hooks/useAuthStore'
 
@@ -41,6 +42,7 @@ function App() {
           <Route path="events" element={<PublicEventsPage />} />
           <Route path="events/:eventId" element={<EventDetailPage />} />
           <Route path="settings/calendar" element={<CalendarSettingsPage />} />
+          <Route path="admin" element={<AdminPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
