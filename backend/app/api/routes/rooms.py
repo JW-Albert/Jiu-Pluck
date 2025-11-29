@@ -9,7 +9,16 @@ from app.models.event import Event
 from app.schemas.room import (
     RoomCreate,
     RoomResponse,
-    RoomInviteRequest
+    RoomInviteRequest,
+    RoomJoinByCodeRequest,
+    RoomJoinResponse
+)
+from app.services.room_service import (
+    create_room,
+    get_user_rooms,
+    get_room_detail,
+    join_room_by_invite_code,
+    regenerate_invite_code
 )
 from app.schemas.auth import MessageResponse
 from app.schemas.event import (
@@ -18,7 +27,6 @@ from app.schemas.event import (
     EventVoteRequest,
     EventVoteResponse
 )
-from app.services.room_service import create_room, get_user_rooms, get_room_detail
 from app.services.event_service import create_private_event, vote_event, get_event_vote_stats
 from app.services.discord_service import send_event_notification, send_room_notification
 import json
@@ -84,6 +92,7 @@ async def get_rooms(
                 "owner_id": r.owner_id,
                 "owner_name": owner.name if owner else None,
                 "school": r.school,
+                "invite_code": r.invite_code,
                 "created_at": r.created_at,
                 "updated_at": r.updated_at,
                 "members": members
@@ -138,17 +147,65 @@ async def get_room(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.post("/{room_id}/invite", response_model=MessageResponse)
-async def invite_to_room(
+@router.get("/{room_id}/invite-code", response_model=MessageResponse)
+async def get_invite_code(
     room_id: str,
-    invite_data: RoomInviteRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """邀請使用者加入房間"""
-    # TODO: 實作邀請邏輯
-    # 目前先簡單回傳成功訊息
-    return {"message": f"Invitation sent to {invite_data.email}"}
+    """取得房間邀請碼（僅限房主或管理員）"""
+    result = await db.execute(select(Room).where(Room.id == room_id))
+    room = result.scalar_one_or_none()
+    
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    
+    # 檢查權限：管理員或房間擁有者
+    if not current_user.is_admin and room.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only room owner or admin can view invite code"
+        )
+    
+    return {"message": room.invite_code or "No invite code"}
+
+
+@router.post("/{room_id}/regenerate-invite-code", response_model=MessageResponse)
+async def regenerate_invite_code_endpoint(
+    room_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """重新生成房間邀請碼（僅限房主或管理員）"""
+    result = await db.execute(select(Room).where(Room.id == room_id))
+    room = result.scalar_one_or_none()
+    
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    
+    # 檢查權限：管理員或房間擁有者
+    if not current_user.is_admin and room.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only room owner or admin can regenerate invite code"
+        )
+    
+    result = await regenerate_invite_code(db, room_id, current_user.id)
+    return {"message": f"New invite code: {result['invite_code']}"}
+
+
+@router.post("/join", response_model=RoomJoinResponse)
+async def join_room_by_code(
+    join_data: RoomJoinByCodeRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """通過邀請碼加入房間"""
+    try:
+        result = await join_room_by_invite_code(db, join_data.invite_code, current_user.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/{room_id}/events", response_model=EventResponse)

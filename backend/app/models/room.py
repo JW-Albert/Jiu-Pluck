@@ -19,6 +19,7 @@ class Room(Base):
     name = Column(String, nullable=False)
     owner_id = Column(String, nullable=False, index=True)
     school = Column(String)
+    invite_code = Column(String, unique=True, nullable=True, index=True)  # 邀請碼
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

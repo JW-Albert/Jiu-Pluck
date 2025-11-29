@@ -6,6 +6,7 @@ export interface Room {
   owner_id: string
   owner_name?: string
   school?: string
+  invite_code?: string
   created_at: string
   updated_at: string
   members?: Array<{ user_id: string; name?: string; role: string }>
@@ -62,6 +63,21 @@ export const roomsApi = {
 
   deleteRoom: async (roomId: string) => {
     const response = await apiClient.delete(`/rooms/${roomId}`)
+    return response.data
+  },
+
+  getInviteCode: async (roomId: string) => {
+    const response = await apiClient.get(`/rooms/${roomId}/invite-code`)
+    return response.data
+  },
+
+  regenerateInviteCode: async (roomId: string) => {
+    const response = await apiClient.post(`/rooms/${roomId}/regenerate-invite-code`)
+    return response.data
+  },
+
+  joinRoomByCode: async (inviteCode: string) => {
+    const response = await apiClient.post('/rooms/join', { invite_code: inviteCode })
     return response.data
   },
 }

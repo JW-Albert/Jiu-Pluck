@@ -93,6 +93,11 @@ export default function RoomListPage() {
         </div>
       )}
 
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">通過邀請碼加入房間</h2>
+        <JoinRoomForm />
+      </div>
+
       {isLoading ? (
         <p className="text-gray-500">載入中...</p>
       ) : rooms && rooms.length > 0 ? (
@@ -125,6 +130,52 @@ export default function RoomListPage() {
         <p className="text-gray-500">還沒有加入任何房間</p>
       )}
     </div>
+  )
+}
+
+function JoinRoomForm() {
+  const [inviteCode, setInviteCode] = useState('')
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  const joinMutation = useMutation({
+    mutationFn: (code: string) => roomsApi.joinRoomByCode(code),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['rooms'] })
+      setInviteCode('')
+      alert(`成功加入房間：${data.room_name}`)
+      navigate(`/rooms/${data.room_id}`)
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.detail || '加入失敗，請檢查邀請碼是否正確')
+    },
+  })
+
+  const handleJoin = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (inviteCode.trim()) {
+      joinMutation.mutate(inviteCode.trim())
+    }
+  }
+
+  return (
+    <form onSubmit={handleJoin} className="flex items-center space-x-2">
+      <input
+        type="text"
+        value={inviteCode}
+        onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+        placeholder="輸入邀請碼"
+        className="flex-1 border border-gray-300 rounded-md px-3 py-2 font-mono"
+        maxLength={8}
+      />
+      <button
+        type="submit"
+        disabled={joinMutation.isPending || !inviteCode.trim()}
+        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+      >
+        {joinMutation.isPending ? '加入中...' : '加入房間'}
+      </button>
+    </form>
   )
 }
 

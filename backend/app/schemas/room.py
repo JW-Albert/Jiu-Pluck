@@ -20,6 +20,7 @@ class RoomResponse(BaseModel):
     owner_id: str
     owner_name: Optional[str] = None
     school: Optional[str] = None
+    invite_code: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     members: List[RoomMember] = []
@@ -27,6 +28,16 @@ class RoomResponse(BaseModel):
 
 class RoomInviteRequest(BaseModel):
     email: str
+
+
+class RoomJoinByCodeRequest(BaseModel):
+    invite_code: str
+
+
+class RoomJoinResponse(BaseModel):
+    message: str
+    room_id: str
+    room_name: str
 
 
 class WebhookCreate(BaseModel):

@@ -207,7 +207,7 @@ export default function RoomDetailPage() {
           </div>
         </div>
 
-        <div>
+        <div className="space-y-6">
           <div className="bg-white shadow rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">成員</h2>
             <ul className="space-y-2">
@@ -218,6 +218,49 @@ export default function RoomDetailPage() {
               ))}
             </ul>
           </div>
+
+          {(currentUser?.is_admin || room.owner_id === currentUser?.id) && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">邀請設定</h2>
+              {room.invite_code ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">邀請碼：</p>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <code className="px-3 py-2 bg-gray-100 rounded text-lg font-mono">
+                      {room.invite_code}
+                    </code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(room.invite_code!)
+                        alert('邀請碼已複製到剪貼簿')
+                      }}
+                      className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    >
+                      複製
+                    </button>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (confirm('確定要重新生成邀請碼嗎？舊的邀請碼將失效。')) {
+                        try {
+                          await roomsApi.regenerateInviteCode(roomId!)
+                          queryClient.invalidateQueries({ queryKey: ['room', roomId] })
+                          alert('邀請碼已重新生成')
+                        } catch (error) {
+                          alert('重新生成失敗')
+                        }
+                      }
+                    }}
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
+                  >
+                    重新生成邀請碼
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-500">載入中...</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
