@@ -4,6 +4,7 @@ export interface Room {
   id: string
   name: string
   owner_id: string
+  owner_name?: string
   school?: string
   created_at: string
   updated_at: string
@@ -56,6 +57,11 @@ export const roomsApi = {
 
   deleteWebhook: async (roomId: string, webhookId: string) => {
     const response = await apiClient.delete(`/rooms/${roomId}/webhooks/${webhookId}`)
+    return response.data
+  },
+
+  deleteRoom: async (roomId: string) => {
+    const response = await apiClient.delete(`/rooms/${roomId}`)
     return response.data
   },
 }

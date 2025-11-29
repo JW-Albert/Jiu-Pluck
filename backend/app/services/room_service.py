@@ -68,11 +68,17 @@ async def get_user_rooms(db: AsyncSession, user_id: str) -> List[Dict]:
 
 async def get_room_detail(db: AsyncSession, room_id: str) -> Dict:
     """取得房間詳細資訊"""
+    from app.models.user import User
+    
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
     
     if not room:
         raise ValueError("Room not found")
+    
+    # 取得擁有者資訊
+    owner_result = await db.execute(select(User).where(User.id == room.owner_id))
+    owner = owner_result.scalar_one_or_none()
     
     # 取得成員
     result = await db.execute(
@@ -80,9 +86,20 @@ async def get_room_detail(db: AsyncSession, room_id: str) -> Dict:
     )
     members_data = result.fetchall()
     
-    # TODO: 取得成員詳細資訊（name 等）
+    # 取得成員詳細資訊（name 等）
+    member_ids = [row[1] for row in members_data]
+    if member_ids:
+        users_result = await db.execute(select(User).where(User.id.in_(member_ids)))
+        users = {u.id: u for u in users_result.scalars().all()}
+    else:
+        users = {}
+    
     members = [
-        {"user_id": row[1], "role": row[2]}
+        {
+            "user_id": row[1],
+            "name": users.get(row[1]).name if row[1] in users else None,
+            "role": row[2]
+        }
         for row in members_data
     ]
     
@@ -105,6 +122,7 @@ async def get_room_detail(db: AsyncSession, room_id: str) -> Dict:
         "id": room.id,
         "name": room.name,
         "owner_id": room.owner_id,
+        "owner_name": owner.name if owner else None,
         "school": room.school,
         "created_at": room.created_at,
         "updated_at": room.updated_at,

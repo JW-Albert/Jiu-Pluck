@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_admin
 from app.models.user import User
 from app.models.room import Room, room_members
 from app.models.event import Event
@@ -42,9 +42,86 @@ async def get_rooms(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """取得使用者參與的房間列表"""
-    rooms = await get_user_rooms(db, current_user.id)
-    return rooms
+    """取得使用者參與的房間列表（管理員可以看到所有房間）"""
+    if current_user.is_admin:
+        # 管理員可以看到所有房間
+        result = await db.execute(select(Room).order_by(Room.created_at.desc()))
+        all_rooms = result.scalars().all()
+        rooms = []
+        for r in all_rooms:
+            # 取得房間成員資訊（包含姓名）
+            members_result = await db.execute(
+                select(room_members).where(room_members.c.room_id == r.id)
+            )
+            members_data = members_result.fetchall()
+            member_ids = [row[1] for row in members_data]
+            
+            # 取得使用者資訊
+            if member_ids:
+                users_result = await db.execute(
+                    select(User).where(User.id.in_(member_ids))
+                )
+                users = {u.id: u for u in users_result.scalars().all()}
+            else:
+                users = {}
+            
+            # 取得擁有者資訊
+            owner_result = await db.execute(select(User).where(User.id == r.owner_id))
+            owner = owner_result.scalar_one_or_none()
+            
+            members = [
+                {
+                    "user_id": row[1],
+                    "name": users.get(row[1]).name if row[1] in users else None,
+                    "role": row[2]
+                }
+                for row in members_data
+            ]
+            
+            rooms.append({
+                "id": r.id,
+                "name": r.name,
+                "owner_id": r.owner_id,
+                "owner_name": owner.name if owner else None,
+                "school": r.school,
+                "created_at": r.created_at,
+                "updated_at": r.updated_at,
+                "members": members
+            })
+        return rooms
+    else:
+        # 一般使用者只能看到自己參與的房間
+        rooms = await get_user_rooms(db, current_user.id)
+        # 為每個房間添加成員姓名和擁有者姓名
+        for room in rooms:
+            # 取得擁有者資訊
+            owner_result = await db.execute(select(User).where(User.id == room["owner_id"]))
+            owner = owner_result.scalar_one_or_none()
+            room["owner_name"] = owner.name if owner else None
+            
+            members_result = await db.execute(
+                select(room_members).where(room_members.c.room_id == room["id"])
+            )
+            members_data = members_result.fetchall()
+            member_ids = [row[1] for row in members_data]
+            
+            if member_ids:
+                users_result = await db.execute(
+                    select(User).where(User.id.in_(member_ids))
+                )
+                users = {u.id: u for u in users_result.scalars().all()}
+            else:
+                users = {}
+            
+            room["members"] = [
+                {
+                    "user_id": row[1],
+                    "name": users.get(row[1]).name if row[1] in users else None,
+                    "role": row[2]
+                }
+                for row in members_data
+            ]
+        return rooms
 
 
 @router.get("/{room_id}", response_model=RoomResponse)
@@ -117,13 +194,23 @@ async def get_room_events(
     )
     events = result.scalars().all()
     
+    # 取得所有建立者的資訊
+    creator_ids = list(set([e.created_by for e in events]))
+    if creator_ids:
+        users_result = await db.execute(select(User).where(User.id.in_(creator_ids)))
+        users = {u.id: u for u in users_result.scalars().all()}
+    else:
+        users = {}
+    
     events_list = []
     for e in events:
+        creator = users.get(e.created_by)
         vote_stats = await get_event_vote_stats(db, e.id)
         events_list.append({
             "id": e.id,
             "room_id": e.room_id,
             "created_by": e.created_by,
+            "created_by_name": creator.name if creator else None,
             "title": e.title,
             "description": e.description,
             "category": e.category,
@@ -171,4 +258,54 @@ async def vote_room_event(
         print(f"Failed to send Discord notification: {e}")
     
     return result
+
+
+@router.delete("/{room_id}", response_model=MessageResponse)
+async def delete_room(
+    room_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """刪除房間（僅限管理員或房間擁有者）"""
+    result = await db.execute(select(Room).where(Room.id == room_id))
+    room = result.scalar_one_or_none()
+    
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    
+    # 檢查權限：管理員或房間擁有者
+    if not current_user.is_admin and room.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only room owner or admin can delete this room"
+        )
+    
+    # 刪除相關的活動、成員、webhooks 等
+    # 先刪除活動
+    events_result = await db.execute(select(Event).where(Event.room_id == room_id))
+    events = events_result.scalars().all()
+    for event in events:
+        # 刪除活動相關的投票和參加者
+        from app.models.event import EventVote, event_attendees
+        await db.execute(EventVote.__table__.delete().where(EventVote.event_id == event.id))
+        await db.execute(event_attendees.delete().where(event_attendees.c.event_id == event.id))
+        await db.delete(event)
+    
+    # 刪除成員關係
+    await db.execute(room_members.delete().where(room_members.c.room_id == room_id))
+    
+    # 刪除 webhooks
+    from app.models.room import RoomWebhook
+    webhooks_result = await db.execute(
+        select(RoomWebhook).where(RoomWebhook.room_id == room_id)
+    )
+    webhooks = webhooks_result.scalars().all()
+    for webhook in webhooks:
+        await db.delete(webhook)
+    
+    # 刪除房間
+    await db.delete(room)
+    await db.commit()
+    
+    return {"message": "Room deleted successfully"}
 

@@ -26,6 +26,7 @@ export interface Event {
   id: string
   room_id?: string
   created_by: string
+  created_by_name?: string
   title: string
   description?: string
   category?: string
@@ -101,6 +102,11 @@ export const eventsApi = {
 
   getEventAttendees: async (eventId: string): Promise<EventAttendee[]> => {
     const response = await apiClient.get(`/events/${eventId}/attendees`)
+    return response.data
+  },
+
+  deleteEvent: async (eventId: string) => {
+    const response = await apiClient.delete(`/events/${eventId}`)
     return response.data
   },
 }

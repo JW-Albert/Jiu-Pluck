@@ -18,6 +18,7 @@ class RoomResponse(BaseModel):
     id: str
     name: str
     owner_id: str
+    owner_name: Optional[str] = None
     school: Optional[str] = None
     created_at: datetime
     updated_at: datetime

@@ -51,6 +51,7 @@ class EventResponse(BaseModel):
     id: str
     room_id: Optional[str] = None
     created_by: str
+    created_by_name: Optional[str] = None
     title: str
     description: Optional[str] = None
     category: Optional[str] = None

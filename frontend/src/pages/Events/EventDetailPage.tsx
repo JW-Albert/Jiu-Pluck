@@ -1,11 +1,14 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { eventsApi } from '../../api/events'
 import { useAuthStore } from '../../hooks/useAuthStore'
+import { useCurrentUser } from '../../api/users'
 
 export default function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const { accessToken } = useAuthStore()
+  const { data: currentUser } = useCurrentUser()
+  const navigate = useNavigate()
   const isAuthenticated = !!accessToken
 
   const { data: event, isLoading } = useQuery({
@@ -37,6 +40,19 @@ export default function EventDetailPage() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (eventId: string) => eventsApi.deleteEvent(eventId),
+    onSuccess: () => {
+      navigate('/events')
+    },
+  })
+
+  const handleDelete = () => {
+    if (confirm('確定要刪除這個活動嗎？')) {
+      deleteMutation.mutate(eventId!)
+    }
+  }
+
   if (isLoading) {
     return <div className="px-4 py-6">載入中...</div>
   }
@@ -55,7 +71,22 @@ export default function EventDetailPage() {
       </Link>
 
       <div className="bg-white shadow rounded-lg p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">{event.title}</h1>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{event.title}</h1>
+            {event.created_by_name && (
+              <p className="text-sm text-gray-500 mt-2">建立者：{event.created_by_name}</p>
+            )}
+          </div>
+          {(currentUser?.is_admin || event.created_by === currentUser?.id) && (
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              刪除活動
+            </button>
+          )}
+        </div>
 
         {event.description && (
           <p className="text-gray-700 mb-4">{event.description}</p>

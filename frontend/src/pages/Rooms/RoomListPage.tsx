@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { roomsApi, RoomCreate } from '../../api/rooms'
+import { useCurrentUser } from '../../api/users'
 import { useState } from 'react'
 
 export default function RoomListPage() {
@@ -13,6 +14,8 @@ export default function RoomListPage() {
     queryFn: roomsApi.getRooms,
   })
 
+  const { data: currentUser } = useCurrentUser()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const createMutation = useMutation({
     mutationFn: (data: RoomCreate) => roomsApi.createRoom(data),
@@ -23,6 +26,21 @@ export default function RoomListPage() {
       setRoomSchool('')
     },
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: (roomId: string) => roomsApi.deleteRoom(roomId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rooms'] })
+    },
+  })
+
+  const handleDelete = (e: React.MouseEvent, roomId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (confirm('確定要刪除這個房間嗎？')) {
+      deleteMutation.mutate(roomId)
+    }
+  }
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
@@ -80,14 +98,27 @@ export default function RoomListPage() {
       ) : rooms && rooms.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {rooms.map((room) => (
-            <Link
+            <div
               key={room.id}
-              to={`/rooms/${room.id}`}
-              className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition"
+              className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition relative"
             >
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{room.name}</h3>
-              {room.school && <p className="text-gray-600">{room.school}</p>}
-            </Link>
+              <Link to={`/rooms/${room.id}`} className="block">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{room.name}</h3>
+                {room.school && <p className="text-gray-600 mb-2">{room.school}</p>}
+                {room.owner_name && (
+                  <p className="text-sm text-gray-500">擁有者：{room.owner_name}</p>
+                )}
+              </Link>
+              {(currentUser?.is_admin || room.owner_id === currentUser?.id) && (
+                <button
+                  onClick={(e) => handleDelete(e, room.id)}
+                  className="absolute top-4 right-4 text-red-600 hover:text-red-800"
+                  title="刪除房間"
+                >
+                  刪除
+                </button>
+              )}
+            </div>
           ))}
         </div>
       ) : (

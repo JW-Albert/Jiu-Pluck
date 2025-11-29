@@ -1,7 +1,8 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { roomsApi } from '../../api/rooms'
 import { eventsApi, PrivateEventCreate, Event } from '../../api/events'
+import { useCurrentUser } from '../../api/users'
 import { useState } from 'react'
 
 export default function RoomDetailPage() {
@@ -24,6 +25,8 @@ export default function RoomDetailPage() {
     enabled: !!roomId,
   })
 
+  const { data: currentUser } = useCurrentUser()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const createEventMutation = useMutation({
     mutationFn: (data: PrivateEventCreate) => eventsApi.createRoomEvent(roomId!, data),
@@ -37,6 +40,32 @@ export default function RoomDetailPage() {
       setEventLocation('')
     },
   })
+
+  const deleteRoomMutation = useMutation({
+    mutationFn: (roomId: string) => roomsApi.deleteRoom(roomId),
+    onSuccess: () => {
+      navigate('/rooms')
+    },
+  })
+
+  const deleteEventMutation = useMutation({
+    mutationFn: (eventId: string) => eventsApi.deleteEvent(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['room-events', roomId] })
+    },
+  })
+
+  const handleDeleteRoom = () => {
+    if (confirm('確定要刪除這個房間嗎？這將刪除所有相關的活動。')) {
+      deleteRoomMutation.mutate(roomId!)
+    }
+  }
+
+  const handleDeleteEvent = (eventId: string) => {
+    if (confirm('確定要刪除這個活動嗎？')) {
+      deleteEventMutation.mutate(eventId)
+    }
+  }
 
   const handleCreateEvent = (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,7 +93,17 @@ export default function RoomDetailPage() {
         返回房間列表
       </Link>
 
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">{room.name}</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">{room.name}</h1>
+        {(currentUser?.is_admin || room.owner_id === currentUser?.id) && (
+          <button
+            onClick={handleDeleteRoom}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            刪除房間
+          </button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -132,14 +171,32 @@ export default function RoomDetailPage() {
             <div className="space-y-4">
               {events && events.length > 0 ? (
                 events.map((event: Event) => (
-                  <div key={event.id} className="border rounded p-4">
-                    <h3 className="font-semibold text-lg">{event.title}</h3>
-                    {event.description && <p className="text-gray-600 mt-2">{event.description}</p>}
-                    {event.vote_stats && (
-                      <div className="mt-2 text-sm">
-                        投票：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}
+                  <div key={event.id} className="border rounded p-4 relative">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg">{event.title}</h3>
+                        {event.created_by_name && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            建立者：{event.created_by_name}
+                          </p>
+                        )}
+                        {event.description && <p className="text-gray-600 mt-2">{event.description}</p>}
+                        {event.vote_stats && (
+                          <div className="mt-2 text-sm">
+                            投票：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}
+                          </div>
+                        )}
                       </div>
-                    )}
+                      {(currentUser?.is_admin || event.created_by === currentUser?.id || room.owner_id === currentUser?.id) && (
+                        <button
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="ml-4 text-red-600 hover:text-red-800"
+                          title="刪除活動"
+                        >
+                          刪除
+                        </button>
+                      )}
+                    </div>
                     {/* TODO: 顯示投票按鈕 */}
                   </div>
                 ))

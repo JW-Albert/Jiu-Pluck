@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { eventsApi } from '../../api/events'
+import { useCurrentUser } from '../../api/users'
 import { useState } from 'react'
 
 export default function PublicEventsPage() {
   const [category, setCategory] = useState('')
   const [school, setSchool] = useState('')
+  const { data: currentUser } = useCurrentUser()
 
   const { data: events, isLoading } = useQuery({
     queryKey: ['public-events', category, school],
@@ -51,6 +53,9 @@ export default function PublicEventsPage() {
               className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition"
             >
               <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.title}</h3>
+              {event.created_by_name && (
+                <p className="text-sm text-gray-500 mb-2">建立者：{event.created_by_name}</p>
+              )}
               {event.description && (
                 <p className="text-gray-600 text-sm mb-2 line-clamp-2">{event.description}</p>
               )}
@@ -66,6 +71,11 @@ export default function PublicEventsPage() {
               )}
               {event.location && (
                 <p className="text-sm text-gray-500 mt-1">{event.location}</p>
+              )}
+              {event.public === 0 && (
+                <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded mt-2">
+                  私人活動
+                </span>
               )}
             </Link>
           ))}
