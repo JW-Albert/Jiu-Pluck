@@ -128,19 +128,34 @@ cd $BACKEND_DIR
 # 建立虛擬環境的函數
 create_venv() {
     echo "建立 Python 虛擬環境..."
-    python3 -m venv venv 2>&1
     
-    # 檢查是否因為缺少 python3-venv 而失敗
-    if [ $? -ne 0 ] || [ ! -f "venv/bin/activate" ]; then
-        echo "虛擬環境建立失敗，嘗試安裝 python3-venv..."
+    # 先嘗試建立
+    python3 -m venv venv 2>&1
+    VENV_EXIT_CODE=$?
+    
+    # 檢查是否成功（檢查 activate 檔案是否存在）
+    if [ ! -f "venv/bin/activate" ]; then
+        echo "虛擬環境建立失敗，檢測到缺少 python3-venv 套件"
+        echo "嘗試自動安裝 python3-venv..."
         
         # 根據系統類型安裝 python3-venv
         if command -v apt-get &> /dev/null; then
             # Debian/Ubuntu - 需要取得 Python 版本
-            PYTHON_VERSION=$(python3 --version | grep -oP '\d+\.\d+' | head -1)
-            echo "安裝 python${PYTHON_VERSION}-venv..."
-            sudo apt-get update
-            sudo apt-get install -y "python${PYTHON_VERSION}-venv" || sudo apt-get install -y python3-venv
+            PYTHON_VERSION=$(python3 --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
+            if [ -n "$PYTHON_VERSION" ]; then
+                echo "安裝 python${PYTHON_VERSION}-venv..."
+                sudo apt-get update
+                if sudo apt-get install -y "python${PYTHON_VERSION}-venv" 2>/dev/null; then
+                    echo "python${PYTHON_VERSION}-venv 安裝成功"
+                else
+                    echo "嘗試安裝通用 python3-venv..."
+                    sudo apt-get install -y python3-venv
+                fi
+            else
+                echo "安裝 python3-venv..."
+                sudo apt-get update
+                sudo apt-get install -y python3-venv
+            fi
         elif command -v yum &> /dev/null; then
             # CentOS/RHEL
             echo "安裝 python3-virtualenv..."
@@ -164,11 +179,12 @@ create_venv() {
         # 清理並重新建立
         rm -rf venv
         echo "重新建立虛擬環境..."
-        python3 -m venv venv
+        python3 -m venv venv 2>&1
         
         # 再次驗證
         if [ ! -f "venv/bin/activate" ]; then
             echo "錯誤: 虛擬環境建立仍然失敗"
+            echo "請手動執行: sudo apt-get install python3-venv"
             return 1
         fi
     fi
