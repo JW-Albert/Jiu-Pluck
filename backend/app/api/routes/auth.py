@@ -4,12 +4,13 @@ from app.core.database import get_db
 from app.schemas.auth import (
     SignupRequest,
     VerifyEmailRequest,
+    RequestLoginOTPRequest,
     LoginRequest,
     TokenResponse,
     RefreshTokenRequest,
     MessageResponse
 )
-from app.services.auth_service import signup, verify_email, login
+from app.services.auth_service import signup, verify_email, request_login_otp, login
 from app.core.security import decode_token, create_access_token
 
 router = APIRouter()
@@ -41,12 +42,25 @@ async def verify_email_endpoint(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+@router.post("/request-login-otp", response_model=MessageResponse)
+async def request_login_otp_endpoint(
+    request_data: RequestLoginOTPRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """請求登入 OTP"""
+    try:
+        result = await request_login_otp(db, request_data.email)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login_endpoint(
     login_data: LoginRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """登入"""
+    """使用 OTP 登入"""
     try:
         result = await login(db, login_data)
         return result

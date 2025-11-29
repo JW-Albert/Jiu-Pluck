@@ -11,7 +11,9 @@
 
 2. 編輯 `ENV/.env` 檔案，設定必要的環境變數：
    - **必須設定**：`APP_SECRET_KEY`（用於 JWT 簽章）
-   - **可選設定**：SMTP、Google Calendar 等
+   - **建議設定**：`ADMIN_EMAIL`（系統啟動時會自動建立 admin 帳號，登入使用 OTP）
+   - **必須設定**：`SMTP_*`（用於發送登入 OTP 和驗證碼）
+   - **可選設定**：Google Calendar 等
 
 ## 注意事項
 

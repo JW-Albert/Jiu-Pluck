@@ -4,7 +4,6 @@ from typing import Optional
 
 class SignupRequest(BaseModel):
     email: EmailStr
-    password: str
     name: Optional[str] = None
     school: Optional[str] = None
     major: Optional[str] = None
@@ -15,9 +14,13 @@ class VerifyEmailRequest(BaseModel):
     code: str
 
 
+class RequestLoginOTPRequest(BaseModel):
+    email: EmailStr
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    code: str  # OTP code
 
 
 class TokenResponse(BaseModel):

@@ -25,6 +25,28 @@ async def send_verification_email(email: str, code: str) -> None:
     )
 
 
+async def send_login_otp_email(email: str, code: str) -> None:
+    """寄送登入 OTP email"""
+    if not settings.SMTP_HOST:
+        # 開發環境：只印出 OTP
+        print(f"[DEV] Login OTP for {email}: {code}")
+        return
+    
+    message = MIMEText(f"Your login code is: {code}\n\nThis code will expire in 10 minutes.")
+    message["Subject"] = "Jiu-Pluck Login Code"
+    message["From"] = settings.SMTP_FROM
+    message["To"] = email
+    
+    await aiosmtplib.send(
+        message,
+        hostname=settings.SMTP_HOST,
+        port=settings.SMTP_PORT,
+        username=settings.SMTP_USERNAME,
+        password=settings.SMTP_PASSWORD,
+        use_tls=settings.SMTP_USE_TLS,
+    )
+
+
 async def send_notification_email(email: str, subject: str, body: str) -> None:
     """寄送通知 email"""
     if not settings.SMTP_HOST:

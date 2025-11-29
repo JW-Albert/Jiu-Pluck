@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/calendar/google/callback"
     GOOGLE_CALENDAR_SCOPES: str = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly"
 
+    # Admin Account (no password needed, uses OTP login)
+    ADMIN_EMAIL: Optional[str] = None
+
     class Config:
         env_file = "../ENV/.env"  # ENV 資料夾在專案根目錄（相對於 backend/ 目錄）
         case_sensitive = True

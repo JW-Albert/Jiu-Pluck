@@ -147,7 +147,8 @@ npm run dev
 
 - `APP_SECRET_KEY`: JWT 簽章金鑰（必須）
 - `DATABASE_URL`: 資料庫連線字串
-- `SMTP_*`: Email 發送設定（可選）
+- `ADMIN_EMAIL`: Admin 帳號 Email（建議設定，系統啟動時會自動建立，登入使用 OTP）
+- `SMTP_*`: Email 發送設定（必須，用於發送登入 OTP 和驗證碼）
 - `GOOGLE_*`: Google Calendar OAuth 設定（可選）
 
 詳細說明請參考 `ENV/.env.example`
