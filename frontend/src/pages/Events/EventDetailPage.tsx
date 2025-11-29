@@ -53,6 +53,20 @@ export default function EventDetailPage() {
     }
   }
 
+  const voteMutation = useMutation({
+    mutationFn: async (vote: 'yes' | 'no' | 'maybe') => {
+      if (!event?.room_id) throw new Error('Room ID not found')
+      return eventsApi.voteEvent(event.room_id, eventId!, { vote })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] })
+    },
+  })
+
+  const handleVote = (vote: 'yes' | 'no' | 'maybe') => {
+    voteMutation.mutate(vote)
+  }
+
   if (isLoading) {
     return <div className="px-4 py-6">載入中...</div>
   }
@@ -66,20 +80,6 @@ export default function EventDetailPage() {
 
   // 判斷是否為私人活動（房間活動）
   const isPrivateEvent = event.public === 0 && event.room_id
-
-  const voteMutation = useMutation({
-    mutationFn: async (vote: 'yes' | 'no' | 'maybe') => {
-      if (!event.room_id) throw new Error('Room ID not found')
-      return eventsApi.voteEvent(event.room_id, eventId!, { vote })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['event', eventId] })
-    },
-  })
-
-  const handleVote = (vote: 'yes' | 'no' | 'maybe') => {
-    voteMutation.mutate(vote)
-  }
 
   // 返回按鈕文字
   const getBackLink = () => {
@@ -128,11 +128,11 @@ export default function EventDetailPage() {
               <span className="ml-2">{event.location}</span>
             </div>
           )}
-          {isPrivateEvent && event.proposed_times && event.proposed_times.length > 0 ? (
+          {isPrivateEvent && event.proposed_times && Array.isArray(event.proposed_times) && event.proposed_times.length > 0 ? (
             <div>
               <span className="font-semibold">候選時間：</span>
               <div className="mt-2 space-y-2">
-                {event.proposed_times.map((time, idx) => (
+                {event.proposed_times.map((time: { start: string; end: string }, idx: number) => (
                   <div key={idx} className="p-2 bg-gray-50 rounded">
                     {new Date(time.start).toLocaleString('zh-TW')} - {new Date(time.end).toLocaleString('zh-TW')}
                   </div>
