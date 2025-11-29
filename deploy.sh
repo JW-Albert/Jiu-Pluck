@@ -49,7 +49,6 @@ if [ ! -f "venv/bin/activate" ]; then
 fi
 
 echo "虛擬環境建立成功"
-return 0
 
 # 啟動虛擬環境
 source venv/bin/activate
