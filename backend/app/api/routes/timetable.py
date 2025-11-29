@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -93,22 +94,36 @@ async def get_user_timetable(
 @router.get("/free-slots", response_model=FreeSlotsResponse)
 async def get_free_slots_endpoint(
     weekday: str = Query(..., description="Weekday: mon, tue, wed, thu, fri, sat, sun"),
+    template_id: int = Query(None, description="Template ID to use for periods"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """取得空堂時間"""
-    # TODO: 從模板取得 periods，目前先硬編碼一個範例
-    # 實際應該從 timetable_templates 表查詢
-    periods = [
-        {"name": "1", "start": "08:10", "end": "09:00"},
-        {"name": "2", "start": "09:10", "end": "10:00"},
-        {"name": "3", "start": "10:10", "end": "11:00"},
-        {"name": "4", "start": "11:10", "end": "12:00"},
-        {"name": "5", "start": "13:10", "end": "14:00"},
-        {"name": "6", "start": "14:10", "end": "15:00"},
-        {"name": "7", "start": "15:10", "end": "16:00"},
-        {"name": "8", "start": "16:10", "end": "17:00"},
-    ]
+    periods = []
+    
+    if template_id:
+        # 從模板取得 periods
+        from app.models.timetable import TimetableTemplate
+        result = await db.execute(
+            select(TimetableTemplate).where(TimetableTemplate.id == template_id)
+        )
+        template = result.scalar_one_or_none()
+        if template and template.status == "approved":
+            import json
+            periods = json.loads(template.periods_json)
+    
+    # 如果沒有指定模板或模板不存在，使用預設節次
+    if not periods:
+        periods = [
+            {"name": "1", "start": "08:10", "end": "09:00"},
+            {"name": "2", "start": "09:10", "end": "10:00"},
+            {"name": "3", "start": "10:10", "end": "11:00"},
+            {"name": "4", "start": "11:10", "end": "12:00"},
+            {"name": "5", "start": "13:10", "end": "14:00"},
+            {"name": "6", "start": "14:10", "end": "15:00"},
+            {"name": "7", "start": "15:10", "end": "16:00"},
+            {"name": "8", "start": "16:10", "end": "17:00"},
+        ]
     
     slots = await get_free_slots(db, current_user.id, weekday, periods)
     return {"weekday": weekday, "slots": [{"start": s.start, "end": s.end} for s in slots]}
