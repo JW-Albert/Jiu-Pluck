@@ -13,7 +13,7 @@ aiosmtplib==5.0.0
 cryptography==46.0.3
 email-validator==2.3.0
 # Google Calendar (optional)
-google-auth==2.43.0
+google-auth==2.42.0
 google-auth-oauthlib==1.2.3
 google-auth-httplib2==0.2.1
 google-api-python-client==2.187.0
