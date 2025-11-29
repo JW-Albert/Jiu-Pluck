@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { roomsApi, eventsApi } from '../../api/rooms'
-import { PrivateEventCreate } from '../../api/events'
+import { roomsApi } from '../../api/rooms'
+import { eventsApi, PrivateEventCreate, Event } from '../../api/events'
 import { useState } from 'react'
 
 export default function RoomDetailPage() {
@@ -131,7 +131,7 @@ export default function RoomDetailPage() {
 
             <div className="space-y-4">
               {events && events.length > 0 ? (
-                events.map((event) => (
+                events.map((event: Event) => (
                   <div key={event.id} className="border rounded p-4">
                     <h3 className="font-semibold text-lg">{event.title}</h3>
                     {event.description && <p className="text-gray-600 mt-2">{event.description}</p>}

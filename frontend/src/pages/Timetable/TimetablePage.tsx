@@ -14,7 +14,7 @@ export default function TimetablePage() {
     queryFn: timetableApi.getTemplates,
   })
 
-  const { data: timetable } = useQuery({
+  useQuery({
     queryKey: ['timetable'],
     queryFn: timetableApi.getTimetable,
   })
