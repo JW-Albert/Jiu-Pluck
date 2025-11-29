@@ -9,7 +9,7 @@ class User(Base):
     id = Column(String, primary_key=True)
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
-    name = Column(String)
+    name = Column(String, nullable=False)  # 必填
     school = Column(String)
     major = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -54,12 +54,21 @@ export default function AdminPage() {
   }
 
   const handleSaveUser = () => {
-    if (selectedUser) {
-      updateUserMutation.mutate({
-        userId: selectedUser.id,
-        data: editForm,
-      })
+    if (!selectedUser) return
+    
+    // 驗證名字欄位
+    if (!editForm.name || !editForm.name.trim()) {
+      alert('請輸入姓名')
+      return
     }
+    
+    updateUserMutation.mutate({
+      userId: selectedUser.id,
+      data: {
+        ...editForm,
+        name: editForm.name.trim(),
+      },
+    })
   }
 
   const handleReviewTemplate = (templateId: number, status: 'approved' | 'rejected') => {
@@ -396,9 +405,10 @@ export default function AdminPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-4">編輯使用者</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">姓名</label>
+                  <label className="block text-sm font-medium text-gray-700">姓名 *</label>
                   <input
                     type="text"
+                    required
                     value={editForm.name || ''}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"

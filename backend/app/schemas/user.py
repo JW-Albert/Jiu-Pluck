@@ -5,7 +5,7 @@ from datetime import datetime
 
 class UserBase(BaseModel):
     email: str
-    name: Optional[str] = None
+    name: str  # 必填
     school: Optional[str] = None
     major: Optional[str] = None
 
@@ -27,7 +27,7 @@ class UserResponse(UserBase):
 
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
+    name: str  # 必填
     school: Optional[str] = None
     major: Optional[str] = None
     is_active: Optional[bool] = None

@@ -24,7 +24,11 @@ export default function SignupPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    signupMutation.mutate({ email, name, school, major })
+    if (!name.trim()) {
+      setError('請輸入姓名')
+      return
+    }
+    signupMutation.mutate({ email, name: name.trim(), school: school.trim() || undefined, major: major.trim() || undefined })
   }
 
   if (success) {
@@ -77,12 +81,13 @@ export default function SignupPage() {
             </div>
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                姓名
+                姓名 *
               </label>
               <input
                 id="name"
                 name="name"
                 type="text"
+                required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={name}
                 onChange={(e) => setName(e.target.value)}

@@ -171,33 +171,46 @@ export default function RoomDetailPage() {
             <div className="space-y-4">
               {events && events.length > 0 ? (
                 events.map((event: Event) => (
-                  <div key={event.id} className="border rounded p-4 relative">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{event.title}</h3>
-                        {event.created_by_name && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            建立者：{event.created_by_name}
-                          </p>
-                        )}
-                        {event.description && <p className="text-gray-600 mt-2">{event.description}</p>}
-                        {event.vote_stats && (
-                          <div className="mt-2 text-sm">
-                            投票：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}
-                          </div>
-                        )}
+                  <div key={event.id} className="border rounded p-4 relative hover:shadow-md transition">
+                    <Link to={`/events/${event.id}`} className="block">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg text-gray-900 hover:text-blue-600">{event.title}</h3>
+                          {event.created_by_name && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              建立者：{event.created_by_name}
+                            </p>
+                          )}
+                          {event.description && <p className="text-gray-600 mt-2 line-clamp-2">{event.description}</p>}
+                          {event.vote_stats && (
+                            <div className="mt-2 text-sm text-gray-600">
+                              投票：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}
+                            </div>
+                          )}
+                        </div>
                       </div>
+                    </Link>
+                    <div className="mt-2 flex justify-between items-center">
+                      <Link
+                        to={`/events/${event.id}`}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        查看詳情 →
+                      </Link>
                       {(currentUser?.is_admin || event.created_by === currentUser?.id || room.owner_id === currentUser?.id) && (
                         <button
-                          onClick={() => handleDeleteEvent(event.id)}
-                          className="ml-4 text-red-600 hover:text-red-800"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleDeleteEvent(event.id)
+                          }}
+                          className="text-red-600 hover:text-red-800 text-sm"
                           title="刪除活動"
                         >
                           刪除
                         </button>
                       )}
                     </div>
-                    {/* TODO: 顯示投票按鈕 */}
                   </div>
                 ))
               ) : (

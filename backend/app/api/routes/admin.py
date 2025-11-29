@@ -104,9 +104,8 @@ async def update_user(
             detail="User not found"
         )
     
-    # 更新欄位
-    if user_data.name is not None:
-        user.name = user_data.name
+    # 更新欄位（name 是必填的）
+    user.name = user_data.name
     if user_data.school is not None:
         user.school = user_data.school
     if user_data.major is not None:

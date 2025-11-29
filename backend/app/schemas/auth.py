@@ -4,7 +4,7 @@ from typing import Optional
 
 class SignupRequest(BaseModel):
     email: EmailStr
-    name: Optional[str] = None
+    name: str  # 必填
     school: Optional[str] = None
     major: Optional[str] = None
 
