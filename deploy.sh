@@ -125,31 +125,68 @@ echo "=========================================="
 
 cd $BACKEND_DIR
 
-# 建立虛擬環境（如果不存在）
-if [ ! -d "venv" ]; then
+# 建立虛擬環境的函數
+create_venv() {
     echo "建立 Python 虛擬環境..."
-    python3 -m venv venv
+    python3 -m venv venv 2>&1
     
-    # 驗證虛擬環境是否建立成功
-    if [ ! -d "venv" ] || [ ! -f "venv/bin/activate" ]; then
-        echo "錯誤: 虛擬環境建立失敗"
+    # 檢查是否因為缺少 python3-venv 而失敗
+    if [ $? -ne 0 ] || [ ! -f "venv/bin/activate" ]; then
+        echo "虛擬環境建立失敗，嘗試安裝 python3-venv..."
+        
+        # 根據系統類型安裝 python3-venv
+        if command -v apt-get &> /dev/null; then
+            # Debian/Ubuntu - 需要取得 Python 版本
+            PYTHON_VERSION=$(python3 --version | grep -oP '\d+\.\d+' | head -1)
+            echo "安裝 python${PYTHON_VERSION}-venv..."
+            sudo apt-get update
+            sudo apt-get install -y "python${PYTHON_VERSION}-venv" || sudo apt-get install -y python3-venv
+        elif command -v yum &> /dev/null; then
+            # CentOS/RHEL
+            echo "安裝 python3-virtualenv..."
+            sudo yum install -y python3-virtualenv
+        elif command -v dnf &> /dev/null; then
+            # Fedora
+            echo "安裝 python3-virtualenv..."
+            sudo dnf install -y python3-virtualenv
+        elif command -v pacman &> /dev/null; then
+            # Arch Linux - venv 已包含在 python 包中
+            echo "Arch Linux 應該已包含 venv，檢查 python 安裝..."
+            sudo pacman -S --noconfirm python
+        else
+            echo "無法自動安裝 python3-venv，請手動安裝："
+            echo "  - Ubuntu/Debian: sudo apt-get install python3-venv"
+            echo "  - CentOS/RHEL: sudo yum install python3-virtualenv"
+            echo "  - Fedora: sudo dnf install python3-virtualenv"
+            return 1
+        fi
+        
+        # 清理並重新建立
+        rm -rf venv
+        echo "重新建立虛擬環境..."
+        python3 -m venv venv
+        
+        # 再次驗證
+        if [ ! -f "venv/bin/activate" ]; then
+            echo "錯誤: 虛擬環境建立仍然失敗"
+            return 1
+        fi
+    fi
+    
+    echo "虛擬環境建立成功"
+    return 0
+}
+
+# 建立虛擬環境（如果不存在）
+if [ ! -d "venv" ] || [ ! -f "venv/bin/activate" ]; then
+    create_venv
+    if [ $? -ne 0 ]; then
+        echo "錯誤: 無法建立虛擬環境，請檢查 Python 和 python3-venv 安裝"
         exit 1
     fi
-    echo "虛擬環境建立成功"
 fi
 
 # 啟動虛擬環境
-if [ ! -f "venv/bin/activate" ]; then
-    echo "錯誤: 找不到 venv/bin/activate，虛擬環境可能損壞"
-    echo "嘗試重新建立虛擬環境..."
-    rm -rf venv
-    python3 -m venv venv
-    if [ ! -f "venv/bin/activate" ]; then
-        echo "錯誤: 無法建立虛擬環境"
-        exit 1
-    fi
-fi
-
 source venv/bin/activate
 
 # 升級 pip
