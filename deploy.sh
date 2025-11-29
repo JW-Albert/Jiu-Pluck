@@ -32,35 +32,24 @@ echo "=========================================="
 cd $BACKEND_DIR
 
 # 建立虛擬環境的函數
-create_venv() {
-    echo "安裝 Python 和 python3-venv..."
-    sudo apt-get update
-    sudo apt-get install -y python3 python3-pip python3-venv
-    
-    # 清理舊的虛擬環境（如果存在）
-    rm -rf venv
-    
-    echo "建立 Python 虛擬環境..."
-    python3 -m venv venv
-    
-    # 驗證是否成功
-    if [ ! -f "venv/bin/activate" ]; then
-        echo "錯誤: 虛擬環境建立失敗"
-        return 1
-    fi
-    
-    echo "虛擬環境建立成功"
-    return 0
-}
+echo "安裝 Python 和 python3-venv..."
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-venv
 
-# 建立虛擬環境（如果不存在）
-if [ ! -d "venv" ] || [ ! -f "venv/bin/activate" ]; then
-    create_venv
-    if [ $? -ne 0 ]; then
-        echo "錯誤: 無法建立虛擬環境，請檢查 Python 和 python3-venv 安裝"
-        exit 1
-    fi
+# 清理舊的虛擬環境（如果存在）
+rm -rf venv
+
+echo "建立 Python 虛擬環境..."
+python3 -m venv venv
+
+# 驗證是否成功
+if [ ! -f "venv/bin/activate" ]; then
+    echo "錯誤: 虛擬環境建立失敗"
+    return 1
 fi
+
+echo "虛擬環境建立成功"
+return 0
 
 # 啟動虛擬環境
 source venv/bin/activate
