@@ -2,15 +2,18 @@ import apiClient from './client'
 
 export interface SignupRequest {
   email: string
-  password: string
   name?: string
   school?: string
   major?: string
 }
 
+export interface RequestLoginOTPRequest {
+  email: string
+}
+
 export interface LoginRequest {
   email: string
-  password: string
+  code: string  // OTP code
 }
 
 export interface TokenResponse {
@@ -32,6 +35,11 @@ export const authApi = {
 
   verifyEmail: async (data: VerifyEmailRequest) => {
     const response = await apiClient.post('/auth/verify-email', data)
+    return response.data
+  },
+
+  requestLoginOTP: async (data: RequestLoginOTPRequest) => {
+    const response = await apiClient.post('/auth/request-login-otp', data)
     return response.data
   },
 

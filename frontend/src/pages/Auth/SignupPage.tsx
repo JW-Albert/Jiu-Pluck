@@ -5,7 +5,6 @@ import { authApi } from '../../api/auth'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [school, setSchool] = useState('')
   const [major, setMajor] = useState('')
@@ -25,7 +24,7 @@ export default function SignupPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    signupMutation.mutate({ email, password, name, school, major })
+    signupMutation.mutate({ email, name, school, major })
   }
 
   if (success) {
@@ -74,20 +73,6 @@ export default function SignupPage() {
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                密碼 *
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <div>
