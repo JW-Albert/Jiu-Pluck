@@ -6,8 +6,9 @@ from app.api.deps import get_current_admin
 from app.models.user import User
 from app.models.timetable import TimetableTemplate
 from app.schemas.user import UserResponse, UserUpdate, UserListResponse
-from app.schemas.timetable import TimetableTemplateResponse, TimetableTemplateReview
+from app.schemas.timetable import TimetableTemplateResponse, TimetableTemplateReview, TimetableTemplateCreate
 from app.schemas.auth import MessageResponse
+from app.services.timetable_service import create_template
 from datetime import datetime
 import json
 
@@ -197,6 +198,36 @@ async def get_pending_templates(
         )
         for t in templates
     ]
+
+
+@router.post("/templates", response_model=TimetableTemplateResponse)
+async def create_template_endpoint(
+    template_data: TimetableTemplateCreate,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """管理員直接建立課表模板（自動通過）"""
+    result = await create_template(
+        db,
+        current_admin.id,
+        template_data.school,
+        template_data.name,
+        [p.dict() for p in template_data.periods]
+    )
+    
+    return TimetableTemplateResponse(
+        id=result["id"],
+        school=result["school"],
+        name=result["name"],
+        periods=result["periods"],
+        created_by=result["created_by"],
+        status=result["status"],
+        submitted_at=result["submitted_at"],
+        reviewed_at=result["reviewed_at"],
+        reviewed_by=result["reviewed_by"],
+        created_at=result["created_at"],
+        updated_at=result["updated_at"]
+    )
 
 
 @router.post("/templates/{template_id}/review", response_model=MessageResponse)

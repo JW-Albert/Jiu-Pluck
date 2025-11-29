@@ -1,12 +1,19 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usersApi, type User, type UserUpdate } from '../../api/users'
-import { usePendingTemplates, useReviewTemplate } from '../../api/admin'
+import { usePendingTemplates, useReviewTemplate, useCreateTemplate } from '../../api/admin'
+import type { TimetableTemplateCreate, PeriodTemplate } from '../../api/timetable'
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'users' | 'templates'>('users')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [editForm, setEditForm] = useState<UserUpdate>({})
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false)
+  const [templateForm, setTemplateForm] = useState<TimetableTemplateCreate>({
+    school: '',
+    name: '',
+    periods: [],
+  })
 
   const { data: userList, isLoading: usersLoading } = useQuery({
     queryKey: ['admin', 'users'],
@@ -15,6 +22,7 @@ export default function AdminPage() {
 
   const { data: pendingTemplates, isLoading: templatesLoading } = usePendingTemplates()
   const reviewMutation = useReviewTemplate()
+  const createTemplateMutation = useCreateTemplate()
   const queryClient = useQueryClient()
 
   const updateUserMutation = useMutation({
@@ -58,6 +66,49 @@ export default function AdminPage() {
     if (confirm(`確定要${status === 'approved' ? '通過' : '拒絕'}這個模板嗎？`)) {
       reviewMutation.mutate({ templateId, review: { status } })
     }
+  }
+
+  const handleAddPeriod = () => {
+    setTemplateForm({
+      ...templateForm,
+      periods: [
+        ...templateForm.periods,
+        { name: '', start: '', end: '' },
+      ],
+    })
+  }
+
+  const handleRemovePeriod = (index: number) => {
+    setTemplateForm({
+      ...templateForm,
+      periods: templateForm.periods.filter((_, i) => i !== index),
+    })
+  }
+
+  const handlePeriodChange = (index: number, field: keyof PeriodTemplate, value: string) => {
+    const newPeriods = [...templateForm.periods]
+    newPeriods[index] = { ...newPeriods[index], [field]: value }
+    setTemplateForm({ ...templateForm, periods: newPeriods })
+  }
+
+  const handleCreateTemplate = () => {
+    if (!templateForm.school || !templateForm.name || templateForm.periods.length === 0) {
+      alert('請填寫所有必填欄位')
+      return
+    }
+
+    if (templateForm.periods.some(p => !p.name || !p.start || !p.end)) {
+      alert('請填寫所有節次的完整資訊')
+      return
+    }
+
+    createTemplateMutation.mutate(templateForm, {
+      onSuccess: () => {
+        setShowCreateTemplate(false)
+        setTemplateForm({ school: '', name: '', periods: [] })
+        alert('模板建立成功！')
+      },
+    })
   }
 
   return (
@@ -176,10 +227,17 @@ export default function AdminPage() {
       )}
 
       {activeTab === 'templates' && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold">待審核模板</h2>
-          </div>
+        <div className="space-y-6">
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-semibold">待審核模板</h2>
+              <button
+                onClick={() => setShowCreateTemplate(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                建立新模板
+              </button>
+            </div>
           {templatesLoading ? (
             <div className="p-6 text-center text-gray-500">載入中...</div>
           ) : pendingTemplates && pendingTemplates.length > 0 ? (
@@ -227,6 +285,106 @@ export default function AdminPage() {
           ) : (
             <div className="p-6 text-center text-gray-500">目前沒有待審核的模板</div>
           )}
+          </div>
+        </div>
+      )}
+
+      {/* 建立模板 Modal */}
+      {showCreateTemplate && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">建立課表模板</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">學校名稱 *</label>
+                  <input
+                    type="text"
+                    value={templateForm.school}
+                    onChange={(e) => setTemplateForm({ ...templateForm, school: e.target.value })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="例如：國立台灣大學"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">模板名稱 *</label>
+                  <input
+                    type="text"
+                    value={templateForm.name}
+                    onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="例如：一般學期"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">節次設定 *</label>
+                    <button
+                      onClick={handleAddPeriod}
+                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                    >
+                      新增節次
+                    </button>
+                  </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {templateForm.periods.map((period, index) => (
+                      <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                        <input
+                          type="text"
+                          value={period.name}
+                          onChange={(e) => handlePeriodChange(index, 'name', e.target.value)}
+                          placeholder="節次名稱（如：1）"
+                          className="flex-1 border border-gray-300 rounded-md px-2 py-1 text-sm"
+                        />
+                        <input
+                          type="time"
+                          value={period.start}
+                          onChange={(e) => handlePeriodChange(index, 'start', e.target.value)}
+                          className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                        />
+                        <span className="text-gray-500">-</span>
+                        <input
+                          type="time"
+                          value={period.end}
+                          onChange={(e) => handlePeriodChange(index, 'end', e.target.value)}
+                          className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                        />
+                        <button
+                          onClick={() => handleRemovePeriod(index)}
+                          className="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          刪除
+                        </button>
+                      </div>
+                    ))}
+                    {templateForm.periods.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        點擊「新增節次」按鈕開始新增
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowCreateTemplate(false)
+                    setTemplateForm({ school: '', name: '', periods: [] })
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleCreateTemplate}
+                  disabled={createTemplateMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {createTemplateMutation.isPending ? '建立中...' : '建立模板'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

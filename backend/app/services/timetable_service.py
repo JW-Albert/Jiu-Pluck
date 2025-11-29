@@ -67,6 +67,47 @@ async def submit_template(
     }
 
 
+async def create_template(
+    db: AsyncSession,
+    admin_id: str,
+    school: str,
+    name: str,
+    periods: List[Dict]
+) -> Dict:
+    """管理員直接建立課表模板（自動通過）"""
+    periods_json = json.dumps(periods)
+    now = datetime.utcnow()
+    
+    template = TimetableTemplate(
+        school=school,
+        name=name,
+        periods_json=periods_json,
+        created_by=admin_id,
+        status="approved",
+        submitted_at=now,
+        reviewed_at=now,
+        reviewed_by=admin_id
+    )
+    
+    db.add(template)
+    await db.commit()
+    await db.refresh(template)
+    
+    return {
+        "id": template.id,
+        "school": template.school,
+        "name": template.name,
+        "periods": json.loads(template.periods_json),
+        "created_by": template.created_by,
+        "status": template.status,
+        "submitted_at": template.submitted_at,
+        "reviewed_at": template.reviewed_at,
+        "reviewed_by": template.reviewed_by,
+        "created_at": template.created_at,
+        "updated_at": template.updated_at
+    }
+
+
 async def save_timetable(db: AsyncSession, user_id: str, data: TimetableData) -> Dict:
     """儲存使用者課表"""
     # 檢查是否已有課表
@@ -93,12 +134,18 @@ async def save_timetable(db: AsyncSession, user_id: str, data: TimetableData) ->
 
 
 async def get_timetable(db: AsyncSession, user_id: str) -> Dict:
-    """取得使用者課表"""
+    """取得使用者課表，如果不存在則自動建立空的課表"""
     result = await db.execute(select(Timetable).where(Timetable.user_id == user_id))
     timetable = result.scalar_one_or_none()
     
     if not timetable:
-        return {"id": None, "user_id": user_id, "data": {}}
+        # 自動建立空的課表
+        empty_data = TimetableData()
+        data_json = json.dumps(empty_data.dict(exclude_none=True))
+        timetable = Timetable(user_id=user_id, data_json=data_json)
+        db.add(timetable)
+        await db.commit()
+        await db.refresh(timetable)
     
     return {
         "id": timetable.id,
