@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     GOOGLE_CALENDAR_SCOPES: str = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly"
 
     class Config:
-        env_file = ".env"
+        env_file = "ENV/.env"
         case_sensitive = True
 
 

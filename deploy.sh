@@ -8,109 +8,15 @@ echo "=========================================="
 echo "Jiu-Pluck 生產環境部署"
 echo "=========================================="
 
-# 檢查並安裝 Python3 (包含 pip 和 venv)
-if ! command -v python3 &> /dev/null; then
-    echo "未找到 python3，嘗試自動安裝..."
-    
-    # 檢測系統類型並安裝
-    if command -v apt-get &> /dev/null; then
-        # Debian/Ubuntu
-        echo "偵測到 Debian/Ubuntu 系統，使用 apt-get 安裝 Python3 (包含 pip 和 venv)..."
-        sudo apt-get update
-        sudo apt-get install -y python3 python3-pip python3-venv
-    elif command -v yum &> /dev/null; then
-        # CentOS/RHEL
-        echo "偵測到 CentOS/RHEL 系統，使用 yum 安裝 Python3 (包含 pip 和 venv)..."
-        sudo yum install -y python3 python3-pip python3-virtualenv
-    elif command -v dnf &> /dev/null; then
-        # Fedora
-        echo "偵測到 Fedora 系統，使用 dnf 安裝 Python3 (包含 pip 和 venv)..."
-        sudo dnf install -y python3 python3-pip python3-virtualenv
-    elif command -v brew &> /dev/null; then
-        # macOS
-        echo "偵測到 macOS 系統，使用 Homebrew 安裝 Python3 (包含 pip 和 venv)..."
-        brew install python3
-        # Homebrew 安裝的 Python3 通常已包含 pip，venv 是標準庫的一部分
-    elif command -v pacman &> /dev/null; then
-        # Arch Linux
-        echo "偵測到 Arch Linux 系統，使用 pacman 安裝 Python3 (包含 pip 和 venv)..."
-        sudo pacman -S --noconfirm python python-pip
-        # Arch Linux 的 Python 包已包含 venv 模組
-    else
-        echo "無法自動安裝 Python3，請手動安裝："
-        echo "  - Ubuntu/Debian: sudo apt-get install python3 python3-pip python3-venv"
-        echo "  - CentOS/RHEL: sudo yum install python3 python3-pip python3-virtualenv"
-        echo "  - Fedora: sudo dnf install python3 python3-pip python3-virtualenv"
-        echo "  - macOS: brew install python3"
-        echo "  - Arch Linux: sudo pacman -S python python-pip"
-        echo "  - 或訪問 https://www.python.org/ 下載安裝"
-        exit 1
-    fi
-    
-    # 驗證安裝
-    if ! command -v python3 &> /dev/null; then
-        echo "錯誤: Python3 安裝失敗，請手動安裝"
-        exit 1
-    fi
-    
-    # 驗證 pip
-    if ! command -v pip3 &> /dev/null && ! python3 -m pip --version &> /dev/null; then
-        echo "警告: pip 未正確安裝，嘗試修復..."
-        python3 -m ensurepip --upgrade || echo "請手動安裝 pip: python3 -m ensurepip"
-    fi
-    
-    # 驗證 venv 模組
-    if ! python3 -m venv --help &> /dev/null; then
-        echo "警告: venv 模組不可用，某些系統可能需要額外安裝 python3-venv 或 python3-virtualenv"
-    fi
-    
-    echo "Python3 安裝成功: $(python3 --version)"
-    echo "pip 版本: $(python3 -m pip --version 2>/dev/null || echo '需要手動安裝')"
-fi
+# 安裝 Python3 (包含 pip 和 venv)
+echo "安裝 Python3 (包含 pip 和 venv)..."
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-venv
 
-# 檢查並安裝 Node.js
-if ! command -v node &> /dev/null; then
-    echo "未找到 node，嘗試自動安裝..."
-    
-    # 檢測系統類型並安裝
-    if command -v apt-get &> /dev/null; then
-        # Debian/Ubuntu
-        echo "偵測到 Debian/Ubuntu 系統，使用 apt-get 安裝 Node.js..."
-        sudo apt-get update
-        sudo apt-get install -y nodejs npm
-    elif command -v yum &> /dev/null; then
-        # CentOS/RHEL
-        echo "偵測到 CentOS/RHEL 系統，使用 yum 安裝 Node.js..."
-        sudo yum install -y nodejs npm
-    elif command -v dnf &> /dev/null; then
-        # Fedora
-        echo "偵測到 Fedora 系統，使用 dnf 安裝 Node.js..."
-        sudo dnf install -y nodejs npm
-    elif command -v brew &> /dev/null; then
-        # macOS
-        echo "偵測到 macOS 系統，使用 Homebrew 安裝 Node.js..."
-        brew install node
-    elif command -v pacman &> /dev/null; then
-        # Arch Linux
-        echo "偵測到 Arch Linux 系統，使用 pacman 安裝 Node.js..."
-        sudo pacman -S --noconfirm nodejs npm
-    else
-        echo "無法自動安裝 Node.js，請手動安裝："
-        echo "  - Ubuntu/Debian: sudo apt-get install nodejs npm"
-        echo "  - CentOS/RHEL: sudo yum install nodejs npm"
-        echo "  - macOS: brew install node"
-        echo "  - 或訪問 https://nodejs.org/ 下載安裝"
-        exit 1
-    fi
-    
-    # 驗證安裝
-    if ! command -v node &> /dev/null; then
-        echo "錯誤: Node.js 安裝失敗，請手動安裝"
-        exit 1
-    fi
-    
-    echo "Node.js 安裝成功: $(node --version)"
-fi
+# 安裝 Node.js
+echo "安裝 Node.js..."
+sudo apt-get update
+sudo apt-get install -y nodejs npm
 
 # 設定變數
 BACKEND_DIR="backend"
@@ -127,66 +33,20 @@ cd $BACKEND_DIR
 
 # 建立虛擬環境的函數
 create_venv() {
+    echo "安裝 Python 和 python3-venv..."
+    sudo apt-get update
+    sudo apt-get install -y python3 python3-pip python3-venv
+    
+    # 清理舊的虛擬環境（如果存在）
+    rm -rf venv
+    
     echo "建立 Python 虛擬環境..."
+    python3 -m venv venv
     
-    # 先嘗試建立
-    python3 -m venv venv 2>&1
-    VENV_EXIT_CODE=$?
-    
-    # 檢查是否成功（檢查 activate 檔案是否存在）
+    # 驗證是否成功
     if [ ! -f "venv/bin/activate" ]; then
-        echo "虛擬環境建立失敗，檢測到缺少 python3-venv 套件"
-        echo "嘗試自動安裝 python3-venv..."
-        
-        # 根據系統類型安裝 python3-venv
-        if command -v apt-get &> /dev/null; then
-            # Debian/Ubuntu - 需要取得 Python 版本
-            PYTHON_VERSION=$(python3 --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
-            if [ -n "$PYTHON_VERSION" ]; then
-                echo "安裝 python${PYTHON_VERSION}-venv..."
-                sudo apt-get update
-                if sudo apt-get install -y "python${PYTHON_VERSION}-venv" 2>/dev/null; then
-                    echo "python${PYTHON_VERSION}-venv 安裝成功"
-                else
-                    echo "嘗試安裝通用 python3-venv..."
-                    sudo apt-get install -y python3-venv
-                fi
-            else
-                echo "安裝 python3-venv..."
-                sudo apt-get update
-                sudo apt-get install -y python3-venv
-            fi
-        elif command -v yum &> /dev/null; then
-            # CentOS/RHEL
-            echo "安裝 python3-virtualenv..."
-            sudo yum install -y python3-virtualenv
-        elif command -v dnf &> /dev/null; then
-            # Fedora
-            echo "安裝 python3-virtualenv..."
-            sudo dnf install -y python3-virtualenv
-        elif command -v pacman &> /dev/null; then
-            # Arch Linux - venv 已包含在 python 包中
-            echo "Arch Linux 應該已包含 venv，檢查 python 安裝..."
-            sudo pacman -S --noconfirm python
-        else
-            echo "無法自動安裝 python3-venv，請手動安裝："
-            echo "  - Ubuntu/Debian: sudo apt-get install python3-venv"
-            echo "  - CentOS/RHEL: sudo yum install python3-virtualenv"
-            echo "  - Fedora: sudo dnf install python3-virtualenv"
-            return 1
-        fi
-        
-        # 清理並重新建立
-        rm -rf venv
-        echo "重新建立虛擬環境..."
-        python3 -m venv venv 2>&1
-        
-        # 再次驗證
-        if [ ! -f "venv/bin/activate" ]; then
-            echo "錯誤: 虛擬環境建立仍然失敗"
-            echo "請手動執行: sudo apt-get install python3-venv"
-            return 1
-        fi
+        echo "錯誤: 虛擬環境建立失敗"
+        return 1
     fi
     
     echo "虛擬環境建立成功"
@@ -213,15 +73,21 @@ pip install --upgrade pip
 echo "安裝 Python 依賴..."
 pip install -r requirements.txt
 
+# 建立 ENV 目錄（如果不存在）
+if [ ! -d "ENV" ]; then
+    mkdir -p ENV
+fi
+
 # 檢查 .env 檔案
-if [ ! -f ".env" ]; then
-    echo "錯誤: 未找到 .env 檔案，請先建立並設定環境變數"
+if [ ! -f "ENV/.env" ]; then
+    echo "錯誤: 未找到 ENV/.env 檔案，請先建立並設定環境變數"
+    echo "可以從 .env.example 複製: cp .env.example ENV/.env"
     exit 1
 fi
 
 # 檢查必要的環境變數
-if ! grep -q "APP_SECRET_KEY=.*[^=]$" .env 2>/dev/null || grep -q "APP_SECRET_KEY=change_me" .env 2>/dev/null; then
-    echo "警告: APP_SECRET_KEY 未設定或使用預設值，請在 .env 中設定安全的密鑰"
+if ! grep -q "APP_SECRET_KEY=.*[^=]$" ENV/.env 2>/dev/null || grep -q "APP_SECRET_KEY=change_me" ENV/.env 2>/dev/null; then
+    echo "警告: APP_SECRET_KEY 未設定或使用預設值，請在 ENV/.env 中設定安全的密鑰"
 fi
 
 # 初始化資料庫（如果需要）
@@ -357,7 +223,7 @@ echo "部署完成！"
 echo "=========================================="
 echo ""
 echo "下一步："
-echo "1. 檢查 backend/.env 檔案設定"
+echo "1. 檢查 backend/ENV/.env 檔案設定"
 echo "2. 執行 ./start_production.sh 啟動服務"
 echo "3. 或使用 systemd service (參考 jiu-pluck.service.example)"
 echo "4. 設定 Nginx (參考 nginx.conf.example)"

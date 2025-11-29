@@ -8,50 +8,30 @@ echo "=========================================="
 echo "Jiu-Pluck 開發環境啟動"
 echo "=========================================="
 
-# 檢查 Python 版本
-if ! command -v python3 &> /dev/null; then
-    echo "錯誤: 未找到 python3，請先安裝 Python 3.11+"
-    exit 1
-fi
-
-# 檢查 Node.js 版本
-if ! command -v node &> /dev/null; then
-    echo "錯誤: 未找到 node，請先安裝 Node.js"
-    exit 1
-fi
-
 # 啟動 Backend
 echo ""
 echo "啟動 Backend..."
 cd backend
 
-# 檢查虛擬環境
-if [ ! -d "venv" ]; then
-    echo "建立 Python 虛擬環境..."
-    python3 -m venv venv
-fi
-
 # 啟動虛擬環境
 source venv/bin/activate
 
-# 安裝依賴
-if [ ! -f ".deps_installed" ]; then
-    echo "安裝 Python 依賴..."
-    pip install -r requirements.txt
-    touch .deps_installed
-fi
-
-# 檢查 .env 檔案
-if [ ! -f ".env" ]; then
-    echo "警告: 未找到 .env 檔案，從 .env.example 複製..."
-    if [ -f ".env.example" ]; then
-        cp .env.example .env
-        echo "請編輯 backend/.env 檔案，至少設定 APP_SECRET_KEY"
-    else
-        echo "錯誤: 未找到 .env.example 檔案"
-        exit 1
+    # 建立 ENV 目錄（如果不存在）
+    if [ ! -d "ENV" ]; then
+        mkdir -p ENV
     fi
-fi
+    
+    # 檢查 .env 檔案
+    if [ ! -f "ENV/.env" ]; then
+        echo "警告: 未找到 ENV/.env 檔案，從 .env.example 複製..."
+        if [ -f ".env.example" ]; then
+            cp .env.example ENV/.env
+            echo "請編輯 backend/ENV/.env 檔案，至少設定 APP_SECRET_KEY"
+        else
+            echo "錯誤: 未找到 .env.example 檔案"
+            exit 1
+        fi
+    fi
 
 # 在背景啟動 Backend
 echo "啟動 FastAPI 伺服器 (http://localhost:8000)..."

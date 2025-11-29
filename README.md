@@ -67,12 +67,13 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. 複製環境變數檔案：
+4. 建立 ENV 目錄並複製環境變數檔案：
 ```bash
-cp .env.example .env
+mkdir -p ENV
+cp .env.example ENV/.env
 ```
 
-5. 編輯 `.env` 檔案，設定必要的環境變數（至少設定 `APP_SECRET_KEY`）
+5. 編輯 `ENV/.env` 檔案，設定必要的環境變數（至少設定 `APP_SECRET_KEY`）
 
 6. 啟動伺服器：
 ```bash
@@ -134,7 +135,9 @@ deploy.bat
 │   │   ├── services/     # 業務邏輯
 │   │   └── main.py       # FastAPI 應用入口
 │   ├── requirements.txt
-│   └── .env.example
+│   ├── .env.example
+│   └── ENV/
+│       └── .env
 │
 └── frontend/
     ├── src/
@@ -157,6 +160,8 @@ deploy.bat
 - `GOOGLE_*`: Google Calendar OAuth 設定（可選）
 
 詳細說明請參考 `backend/.env.example`
+
+**注意**: 環境變數檔案應放在 `backend/ENV/.env`，而不是 `backend/.env`
 
 ## 開發注意事項
 
