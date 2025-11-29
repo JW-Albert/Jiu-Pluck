@@ -12,9 +12,9 @@ async def _send_email(message: MIMEText) -> None:
         print(f"[DEV] Email to {message['To']}:\n{message.as_string()}")
         return
 
-    # 選擇 SSL 直連模式（port 465）
-    use_ssl = getattr(settings, "SMTP_USE_SSL", False)
-    use_tls = getattr(settings, "SMTP_USE_TLS", False)
+    # 選擇 SSL 直連模式（port 465）或 STARTTLS（port 587）
+    use_ssl = settings.SMTP_USE_SSL
+    use_tls = settings.SMTP_USE_TLS
 
     smtp = aiosmtplib.SMTP(
         hostname=settings.SMTP_HOST,

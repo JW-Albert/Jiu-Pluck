@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM: Optional[str] = None
     SMTP_USE_TLS: bool = True
+    SMTP_USE_SSL: bool = False  # 使用 SSL 直連（port 465），否則使用 STARTTLS（port 587）
 
     # Google Calendar
     GOOGLE_CLIENT_ID: Optional[str] = None
