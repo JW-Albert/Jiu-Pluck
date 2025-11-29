@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usersApi, type User, type UserUpdate } from '../../api/users'
 import { usePendingTemplates, useReviewTemplate } from '../../api/admin'
-import type { TimetableTemplateResponse } from '../../api/timetable'
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'users' | 'templates'>('users')

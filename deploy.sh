@@ -32,10 +32,6 @@ echo "=========================================="
 cd $BACKEND_DIR
 
 # 建立虛擬環境的函數
-echo "安裝 Python 和 python3-venv..."
-sudo apt-get update
-sudo apt-get install -y python3 python3-pip python3-venv
-
 # 清理舊的虛擬環境（如果存在）
 rm -rf venv
 
