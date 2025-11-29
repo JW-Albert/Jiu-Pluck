@@ -8,37 +8,41 @@ echo "=========================================="
 echo "Jiu-Pluck 生產環境部署"
 echo "=========================================="
 
-# 檢查並安裝 Python3
+# 檢查並安裝 Python3 (包含 pip 和 venv)
 if ! command -v python3 &> /dev/null; then
     echo "未找到 python3，嘗試自動安裝..."
     
     # 檢測系統類型並安裝
     if command -v apt-get &> /dev/null; then
         # Debian/Ubuntu
-        echo "偵測到 Debian/Ubuntu 系統，使用 apt-get 安裝 Python3..."
+        echo "偵測到 Debian/Ubuntu 系統，使用 apt-get 安裝 Python3 (包含 pip 和 venv)..."
         sudo apt-get update
         sudo apt-get install -y python3 python3-pip python3-venv
     elif command -v yum &> /dev/null; then
         # CentOS/RHEL
-        echo "偵測到 CentOS/RHEL 系統，使用 yum 安裝 Python3..."
-        sudo yum install -y python3 python3-pip
+        echo "偵測到 CentOS/RHEL 系統，使用 yum 安裝 Python3 (包含 pip 和 venv)..."
+        sudo yum install -y python3 python3-pip python3-virtualenv
     elif command -v dnf &> /dev/null; then
         # Fedora
-        echo "偵測到 Fedora 系統，使用 dnf 安裝 Python3..."
-        sudo dnf install -y python3 python3-pip
+        echo "偵測到 Fedora 系統，使用 dnf 安裝 Python3 (包含 pip 和 venv)..."
+        sudo dnf install -y python3 python3-pip python3-virtualenv
     elif command -v brew &> /dev/null; then
         # macOS
-        echo "偵測到 macOS 系統，使用 Homebrew 安裝 Python3..."
+        echo "偵測到 macOS 系統，使用 Homebrew 安裝 Python3 (包含 pip 和 venv)..."
         brew install python3
+        # Homebrew 安裝的 Python3 通常已包含 pip，venv 是標準庫的一部分
     elif command -v pacman &> /dev/null; then
         # Arch Linux
-        echo "偵測到 Arch Linux 系統，使用 pacman 安裝 Python3..."
+        echo "偵測到 Arch Linux 系統，使用 pacman 安裝 Python3 (包含 pip 和 venv)..."
         sudo pacman -S --noconfirm python python-pip
+        # Arch Linux 的 Python 包已包含 venv 模組
     else
         echo "無法自動安裝 Python3，請手動安裝："
         echo "  - Ubuntu/Debian: sudo apt-get install python3 python3-pip python3-venv"
-        echo "  - CentOS/RHEL: sudo yum install python3 python3-pip"
+        echo "  - CentOS/RHEL: sudo yum install python3 python3-pip python3-virtualenv"
+        echo "  - Fedora: sudo dnf install python3 python3-pip python3-virtualenv"
         echo "  - macOS: brew install python3"
+        echo "  - Arch Linux: sudo pacman -S python python-pip"
         echo "  - 或訪問 https://www.python.org/ 下載安裝"
         exit 1
     fi
@@ -49,7 +53,19 @@ if ! command -v python3 &> /dev/null; then
         exit 1
     fi
     
+    # 驗證 pip
+    if ! command -v pip3 &> /dev/null && ! python3 -m pip --version &> /dev/null; then
+        echo "警告: pip 未正確安裝，嘗試修復..."
+        python3 -m ensurepip --upgrade || echo "請手動安裝 pip: python3 -m ensurepip"
+    fi
+    
+    # 驗證 venv 模組
+    if ! python3 -m venv --help &> /dev/null; then
+        echo "警告: venv 模組不可用，某些系統可能需要額外安裝 python3-venv 或 python3-virtualenv"
+    fi
+    
     echo "Python3 安裝成功: $(python3 --version)"
+    echo "pip 版本: $(python3 -m pip --version 2>/dev/null || echo '需要手動安裝')"
 fi
 
 # 檢查並安裝 Node.js
