@@ -15,7 +15,6 @@ export default function RoomListPage() {
   })
 
   const { data: currentUser } = useCurrentUser()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const createMutation = useMutation({
     mutationFn: (data: RoomCreate) => roomsApi.createRoom(data),

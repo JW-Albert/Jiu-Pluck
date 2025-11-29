@@ -1,13 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { eventsApi } from '../../api/events'
-import { useCurrentUser } from '../../api/users'
 import { useState } from 'react'
 
 export default function PublicEventsPage() {
   const [category, setCategory] = useState('')
   const [school, setSchool] = useState('')
-  const { data: currentUser } = useCurrentUser()
 
   const { data: events, isLoading } = useQuery({
     queryKey: ['public-events', category, school],
