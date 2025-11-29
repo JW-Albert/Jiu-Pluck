@@ -175,9 +175,8 @@ export default function LoginPage() {
             還沒有帳號？立即註冊
           </Link>
         </div>
-      </form>
+      </div>
     </div>
-    </div >
   )
 }
 
