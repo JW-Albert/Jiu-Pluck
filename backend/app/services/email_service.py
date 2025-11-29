@@ -1,6 +1,5 @@
 import aiosmtplib
 from email.mime.text import MIMEText
-import ssl
 from app.core.config import settings
 
 
@@ -27,8 +26,7 @@ async def send_verification_email(email: str, code: str) -> None:
     
     # 如果使用 TLS，執行 STARTTLS
     if settings.SMTP_USE_TLS:
-        context = ssl.create_default_context()
-        await smtp.starttls(context)
+        await smtp.starttls()
     
     # 登入
     await smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
@@ -63,8 +61,7 @@ async def send_login_otp_email(email: str, code: str) -> None:
     
     # 如果使用 TLS，執行 STARTTLS
     if settings.SMTP_USE_TLS:
-        context = ssl.create_default_context()
-        await smtp.starttls(context)
+        await smtp.starttls()
     
     # 登入
     await smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
@@ -98,8 +95,7 @@ async def send_notification_email(email: str, subject: str, body: str) -> None:
     
     # 如果使用 TLS，執行 STARTTLS
     if settings.SMTP_USE_TLS:
-        context = ssl.create_default_context()
-        await smtp.starttls(context)
+        await smtp.starttls()
     
     # 登入
     await smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
