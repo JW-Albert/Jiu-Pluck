@@ -29,11 +29,6 @@ echo "=========================================="
 echo "步驟 1: 部署 Backend"
 echo "=========================================="
 
-# 建立 ENV 目錄（如果不存在）- 在專案根目錄
-if [ ! -d "ENV" ]; then
-    mkdir -p ENV
-fi
-
 cd $BACKEND_DIR
 
 # 建立虛擬環境的函數
@@ -83,9 +78,7 @@ cd ..
 # 檢查 ENV/.env 檔案（在專案根目錄）
 if [ ! -f "ENV/.env" ]; then
     echo "錯誤: 未找到 ENV/.env 檔案，請先建立並設定環境變數"
-    if [ -f "$BACKEND_DIR/.env.example" ]; then
-        echo "可以從 backend/.env.example 複製: cp backend/.env.example ENV/.env"
-    fi
+    echo "可以從 ENV/.env.example 複製: cp ENV/.env.example ENV/.env"
     exit 1
 fi
 

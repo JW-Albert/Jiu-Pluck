@@ -10,21 +10,11 @@ echo "=========================================="
 echo "Jiu-Pluck 開發環境啟動"
 echo "=========================================="
 
-# 建立 ENV 目錄（如果不存在）- 在專案根目錄
-if [ ! -d "ENV" ]; then
-    mkdir -p ENV
-fi
-
 # 檢查 ENV/.env 檔案（在專案根目錄）
 if [ ! -f "ENV/.env" ]; then
-    echo "警告: 未找到 ENV/.env 檔案，從 backend/.env.example 複製..."
-    if [ -f "backend/.env.example" ]; then
-        cp backend/.env.example ENV/.env
-        echo "請編輯 ENV/.env 檔案，至少設定 APP_SECRET_KEY"
-    else
-        echo "錯誤: 未找到 backend/.env.example 檔案"
-        exit 1
-    fi
+    echo "警告: 未找到 ENV/.env 檔案，從 ENV/.env.example 複製..."
+    cp ENV/.env.example ENV/.env
+    echo "請編輯 ENV/.env 檔案，至少設定 APP_SECRET_KEY"
 fi
 
 # 啟動 Backend
@@ -32,8 +22,26 @@ echo ""
 echo "啟動 Backend..."
 cd backend
 
+# 檢查並建立虛擬環境
+if [ ! -d "venv" ] || [ ! -f "venv/bin/activate" ]; then
+    echo "建立 Python 虛擬環境..."
+    python3 -m venv venv
+    if [ $? -ne 0 ]; then
+        echo "錯誤: 無法建立虛擬環境，請確認已安裝 Python 3"
+        exit 1
+    fi
+fi
+
 # 啟動虛擬環境
 source venv/bin/activate
+
+# 檢查並安裝依賴
+if [ ! -f "venv/bin/pip" ] || [ ! -d "venv/lib" ]; then
+    echo "升級 pip..."
+    pip install --upgrade pip
+    echo "安裝 Python 依賴..."
+    pip install -r requirements.txt
+fi
 
 # 在背景啟動 Backend
 echo "啟動 FastAPI 伺服器 (http://localhost:8000)..."

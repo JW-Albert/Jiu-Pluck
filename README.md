@@ -36,11 +36,6 @@
 ./run.sh
 ```
 
-**Windows:**
-```cmd
-run.bat
-```
-
 腳本會自動：
 - 建立並啟動 Python 虛擬環境
 - 安裝所有依賴
@@ -59,7 +54,7 @@ cd backend
 2. 建立虛擬環境：
 ```bash
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate
 ```
 
 3. 安裝依賴：
@@ -67,10 +62,9 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. 在專案根目錄建立 ENV 目錄並複製環境變數檔案：
+4. 複製環境變數範例檔案：
 ```bash
-mkdir -p ENV
-cp backend/.env.example ENV/.env
+cp ENV/.env.example ENV/.env
 ```
 
 5. 編輯 `ENV/.env` 檔案（在專案根目錄），設定必要的環境變數（至少設定 `APP_SECRET_KEY`）
@@ -111,11 +105,6 @@ npm run dev
 ./deploy.sh
 ```
 
-**Windows:**
-```cmd
-deploy.bat
-```
-
 部署腳本會：
 - 安裝所有依賴
 - 建置 Frontend 生產版本
@@ -125,7 +114,8 @@ deploy.bat
 ```
 .
 ├── ENV/
-│   └── .env              # 環境變數檔案（在專案根目錄）
+│   ├── .env              # 環境變數檔案（在專案根目錄）
+│   └── .env.example      # 環境變數範例檔案
 ├── boot/
 │   ├── start_production.sh      # 生產環境啟動腳本
 │   ├── setup_service.sh         # 開機自動啟動設定腳本
@@ -138,8 +128,7 @@ deploy.bat
 │   │   ├── schemas/      # Pydantic schemas
 │   │   ├── services/     # 業務邏輯
 │   │   └── main.py       # FastAPI 應用入口
-│   ├── requirements.txt
-│   └── .env.example
+│   └── requirements.txt
 │
 └── frontend/
     ├── src/
@@ -161,9 +150,9 @@ deploy.bat
 - `SMTP_*`: Email 發送設定（可選）
 - `GOOGLE_*`: Google Calendar OAuth 設定（可選）
 
-詳細說明請參考 `backend/.env.example`
+詳細說明請參考 `ENV/.env.example`
 
-**注意**: 環境變數檔案應放在專案根目錄的 `ENV/.env`，而不是 `backend/.env`
+**注意**: 環境變數檔案應放在專案根目錄的 `ENV/.env`，範例檔案在 `ENV/.env.example`
 
 ## 開發注意事項
 
