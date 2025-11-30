@@ -174,7 +174,7 @@ async def get_event_endpoint(
     """取得活動詳細資訊"""
     from sqlalchemy import select
     from app.models.event import Event
-    from app.services.event_service import get_event_vote_stats, get_event_attendees
+    from app.services.event_service import get_event_vote_stats, get_event_attendees, get_event_voters
     import json
     
     result = await db.execute(select(Event).where(Event.id == event_id))
@@ -184,8 +184,10 @@ async def get_event_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     
     vote_stats = None
+    voters = []
     if event.public == 0 and event.proposed_times_json:
         vote_stats = await get_event_vote_stats(db, event.id)
+        voters = await get_event_voters(db, event.id)
     
     attendees = []
     if event.public == 1:
@@ -211,6 +213,7 @@ async def get_event_endpoint(
         "created_at": event.created_at,
         "updated_at": event.updated_at,
         "vote_stats": vote_stats,
+        "voters": voters,
         "attendees": attendees
     }
 

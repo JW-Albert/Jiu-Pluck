@@ -163,7 +163,22 @@ export default function EventDetailPage() {
             <h3 className="text-lg font-semibold mb-3">投票</h3>
             {event.vote_stats && (
               <div className="mb-3 text-sm text-gray-600">
-                統計：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}
+                <div className="font-medium mb-2">統計：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}</div>
+                {event.voters && event.voters.length > 0 && (
+                  <div className="mt-3">
+                    <div className="font-medium mb-2">投票者名單：</div>
+                    <div className="space-y-1">
+                      {event.voters.map((voter) => (
+                        <div key={voter.user_id} className="text-sm">
+                          {voter.name || voter.user_id} - 
+                          <span className={voter.vote === 'yes' ? 'text-green-600 font-medium' : voter.vote === 'no' ? 'text-red-600 font-medium' : 'text-yellow-600 font-medium'}>
+                            {voter.vote === 'yes' ? ' 是' : voter.vote === 'no' ? ' 否' : ' 可能'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <div className="flex space-x-2">
