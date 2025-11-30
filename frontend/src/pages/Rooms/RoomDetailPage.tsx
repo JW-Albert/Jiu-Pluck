@@ -86,14 +86,14 @@ export default function RoomDetailPage() {
 
   const handleCreateEvent = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // 驗證至少有一個時間段
     const validTimes = proposedTimes.filter(t => t.start && t.end)
     if (validTimes.length === 0) {
       alert('請至少指定一個活動時間')
       return
     }
-    
+
     // 驗證時間格式
     for (const time of validTimes) {
       const start = new Date(time.start)
@@ -107,7 +107,7 @@ export default function RoomDetailPage() {
         return
       }
     }
-    
+
     createEventMutation.mutate({
       title: eventTitle,
       description: eventDescription,
