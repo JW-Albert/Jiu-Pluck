@@ -50,3 +50,15 @@ class WebhookResponse(BaseModel):
     url: str
     created_at: datetime
 
+
+class MemberFreeSlotsResponse(BaseModel):
+    user_id: str
+    name: Optional[str] = None
+    weekday: str
+    slots: List[dict]  # List of {start: str, end: str}
+
+
+class RoomMembersFreeSlotsResponse(BaseModel):
+    weekday: str
+    members: List[MemberFreeSlotsResponse]
+

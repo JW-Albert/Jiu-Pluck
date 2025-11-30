@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { roomsApi } from '../../api/rooms'
 import { eventsApi, PrivateEventCreate, Event } from '../../api/events'
 import { useCurrentUser } from '../../api/users'
+import { timetableApi } from '../../api/timetable'
 import { useState } from 'react'
 
 export default function RoomDetailPage() {
@@ -12,6 +13,7 @@ export default function RoomDetailPage() {
   const [eventDescription, setEventDescription] = useState('')
   const [eventCategory, setEventCategory] = useState('')
   const [eventLocation, setEventLocation] = useState('')
+  const [proposedTimes, setProposedTimes] = useState<Array<{ start: string; end: string }>>([{ start: '', end: '' }])
 
   const { data: room, isLoading } = useQuery({
     queryKey: ['room', roomId],
@@ -22,6 +24,20 @@ export default function RoomDetailPage() {
   const { data: events } = useQuery({
     queryKey: ['room-events', roomId],
     queryFn: () => eventsApi.getRoomEvents(roomId!),
+    enabled: !!roomId,
+  })
+
+  const [selectedWeekday, setSelectedWeekday] = useState('monday')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | undefined>(undefined)
+
+  const { data: templates } = useQuery({
+    queryKey: ['timetable-templates'],
+    queryFn: timetableApi.getTemplates,
+  })
+
+  const { data: membersFreeSlots } = useQuery({
+    queryKey: ['room-members-free-slots', roomId, selectedWeekday, selectedTemplateId],
+    queryFn: () => roomsApi.getRoomMembersFreeSlots(roomId!, selectedWeekday, selectedTemplateId),
     enabled: !!roomId,
   })
 
@@ -38,6 +54,7 @@ export default function RoomDetailPage() {
       setEventDescription('')
       setEventCategory('')
       setEventLocation('')
+      setProposedTimes([{ start: '', end: '' }])
     },
   })
 
@@ -69,14 +86,51 @@ export default function RoomDetailPage() {
 
   const handleCreateEvent = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: 實作 proposed_times 輸入
+    
+    // 驗證至少有一個時間段
+    const validTimes = proposedTimes.filter(t => t.start && t.end)
+    if (validTimes.length === 0) {
+      alert('請至少指定一個活動時間')
+      return
+    }
+    
+    // 驗證時間格式
+    for (const time of validTimes) {
+      const start = new Date(time.start)
+      const end = new Date(time.end)
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        alert('請輸入有效的時間格式')
+        return
+      }
+      if (start >= end) {
+        alert('開始時間必須早於結束時間')
+        return
+      }
+    }
+    
     createEventMutation.mutate({
       title: eventTitle,
       description: eventDescription,
       category: eventCategory || undefined,
       location: eventLocation || undefined,
-      proposed_times: [], // TODO: 讓使用者輸入
+      proposed_times: validTimes,
     })
+  }
+
+  const addProposedTime = () => {
+    setProposedTimes([...proposedTimes, { start: '', end: '' }])
+  }
+
+  const removeProposedTime = (index: number) => {
+    if (proposedTimes.length > 1) {
+      setProposedTimes(proposedTimes.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateProposedTime = (index: number, field: 'start' | 'end', value: string) => {
+    const updated = [...proposedTimes]
+    updated[index] = { ...updated[index], [field]: value }
+    setProposedTimes(updated)
   }
 
   if (isLoading) {
@@ -158,6 +212,47 @@ export default function RoomDetailPage() {
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    候選時間 *（至少需要一個）
+                  </label>
+                  {proposedTimes.map((time, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <input
+                        type="datetime-local"
+                        required
+                        value={time.start}
+                        onChange={(e) => updateProposedTime(index, 'start', e.target.value)}
+                        className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                        placeholder="開始時間"
+                      />
+                      <input
+                        type="datetime-local"
+                        required
+                        value={time.end}
+                        onChange={(e) => updateProposedTime(index, 'end', e.target.value)}
+                        className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                        placeholder="結束時間"
+                      />
+                      {proposedTimes.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeProposedTime(index)}
+                          className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          刪除
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addProposedTime}
+                    className="mt-2 px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                  >
+                    + 新增時間選項
+                  </button>
+                </div>
                 <button
                   type="submit"
                   disabled={createEventMutation.isPending}
@@ -230,6 +325,67 @@ export default function RoomDetailPage() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">成員空閒時間</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">選擇星期</label>
+                <select
+                  value={selectedWeekday}
+                  onChange={(e) => setSelectedWeekday(e.target.value)}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2"
+                >
+                  <option value="monday">週一</option>
+                  <option value="tuesday">週二</option>
+                  <option value="wednesday">週三</option>
+                  <option value="thursday">週四</option>
+                  <option value="friday">週五</option>
+                  <option value="saturday">週六</option>
+                  <option value="sunday">週日</option>
+                </select>
+              </div>
+              {templates && templates.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">選擇時間模板（可選）</label>
+                  <select
+                    value={selectedTemplateId || ''}
+                    onChange={(e) => setSelectedTemplateId(e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="block w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="">使用預設時間</option>
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.school} - {template.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {membersFreeSlots && membersFreeSlots.members && membersFreeSlots.members.length > 0 ? (
+                <div className="space-y-4">
+                  {membersFreeSlots.members.map((member) => (
+                    <div key={member.user_id} className="border rounded p-3">
+                      <h3 className="font-semibold mb-2">{member.name || member.user_id}</h3>
+                      {member.slots && member.slots.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {member.slots.map((slot: { start: string; end: string }, idx: number) => (
+                            <div key={idx} className="text-sm bg-gray-50 p-2 rounded">
+                              {slot.start} - {slot.end}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">該時段無空閒時間</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">載入中...</p>
+              )}
+            </div>
           </div>
 
           {(currentUser?.is_admin || room.owner_id === currentUser?.id) && (

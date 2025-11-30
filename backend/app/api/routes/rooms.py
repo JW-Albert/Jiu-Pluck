@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -6,13 +6,18 @@ from app.api.deps import get_current_user, get_current_admin
 from app.models.user import User
 from app.models.room import Room, room_members
 from app.models.event import Event
+from app.models.timetable import TimetableTemplate
 from app.schemas.room import (
     RoomCreate,
     RoomResponse,
     RoomInviteRequest,
     RoomJoinByCodeRequest,
-    RoomJoinResponse
+    RoomJoinResponse,
+    RoomMembersFreeSlotsResponse,
+    MemberFreeSlotsResponse
 )
+from app.schemas.timetable import FreeSlot
+from app.services.timetable_service import get_free_slots
 from app.services.room_service import (
     create_room,
     get_user_rooms,
@@ -206,6 +211,79 @@ async def join_room_by_code(
         return result
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/{room_id}/members/free-slots", response_model=RoomMembersFreeSlotsResponse)
+async def get_room_members_free_slots(
+    room_id: str,
+    weekday: str = Query(..., description="Weekday: monday, tuesday, wednesday, thursday, friday, saturday, sunday"),
+    template_id: int = Query(None, description="Template ID to use for periods"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """取得房間成員的空閒時間"""
+    # 檢查使用者是否為房間成員
+    result = await db.execute(
+        select(room_members).where(
+            room_members.c.room_id == room_id,
+            room_members.c.user_id == current_user.id
+        )
+    )
+    if not result.fetchone():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a room member")
+    
+    # 取得房間所有成員
+    result = await db.execute(
+        select(room_members).where(room_members.c.room_id == room_id)
+    )
+    members_data = result.fetchall()
+    member_ids = [row[1] for row in members_data]
+    
+    if not member_ids:
+        return {"weekday": weekday, "members": []}
+    
+    # 取得成員資訊（包含姓名）
+    users_result = await db.execute(select(User).where(User.id.in_(member_ids)))
+    users = {u.id: u for u in users_result.scalars().all()}
+    
+    # 取得 periods（從模板或使用預設）
+    periods = []
+    if template_id:
+        result = await db.execute(
+            select(TimetableTemplate).where(TimetableTemplate.id == template_id)
+        )
+        template = result.scalar_one_or_none()
+        if template and template.status == "approved":
+            periods = json.loads(template.periods_json)
+    
+    # 如果沒有指定模板或模板不存在，使用預設節次
+    if not periods:
+        periods = [
+            {"name": "1", "start": "08:10", "end": "09:00"},
+            {"name": "2", "start": "09:10", "end": "10:00"},
+            {"name": "3", "start": "10:10", "end": "11:00"},
+            {"name": "4", "start": "11:10", "end": "12:00"},
+            {"name": "5", "start": "13:10", "end": "14:00"},
+            {"name": "6", "start": "14:10", "end": "15:00"},
+            {"name": "7", "start": "15:10", "end": "16:00"},
+            {"name": "8", "start": "16:10", "end": "17:00"},
+        ]
+    
+    # 為每個成員計算空閒時間
+    members_free_slots = []
+    for member_id in member_ids:
+        user = users.get(member_id)
+        slots = await get_free_slots(db, member_id, weekday, periods)
+        members_free_slots.append(
+            MemberFreeSlotsResponse(
+                user_id=member_id,
+                name=user.name if user else None,
+                weekday=weekday,
+                slots=[{"start": s.start, "end": s.end} for s in slots]
+            )
+        )
+    
+    return {"weekday": weekday, "members": members_free_slots}
 
 
 @router.post("/{room_id}/events", response_model=EventResponse)

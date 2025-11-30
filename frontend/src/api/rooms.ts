@@ -80,5 +80,14 @@ export const roomsApi = {
     const response = await apiClient.post('/rooms/join', { invite_code: inviteCode })
     return response.data
   },
+
+  getRoomMembersFreeSlots: async (roomId: string, weekday: string, templateId?: number) => {
+    const params: any = { weekday }
+    if (templateId) {
+      params.template_id = templateId
+    }
+    const response = await apiClient.get(`/rooms/${roomId}/members/free-slots`, { params })
+    return response.data
+  },
 }
 
