@@ -399,9 +399,28 @@ export default function RoomDetailPage() {
                       {room.invite_code}
                     </code>
                     <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(room.invite_code!)
-                        alert('邀請碼已複製到剪貼簿')
+                      onClick={async () => {
+                        if (room.invite_code) {
+                          try {
+                            await navigator.clipboard.writeText(room.invite_code)
+                            alert('邀請碼已複製到剪貼簿')
+                          } catch (error) {
+                            // 如果 clipboard API 失敗，使用備用方法
+                            const textArea = document.createElement('textarea')
+                            textArea.value = room.invite_code
+                            textArea.style.position = 'fixed'
+                            textArea.style.left = '-999999px'
+                            document.body.appendChild(textArea)
+                            textArea.select()
+                            try {
+                              document.execCommand('copy')
+                              alert('邀請碼已複製到剪貼簿')
+                            } catch (err) {
+                              alert('複製失敗，請手動複製')
+                            }
+                            document.body.removeChild(textArea)
+                          }
+                        }
                       }}
                       className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                     >
