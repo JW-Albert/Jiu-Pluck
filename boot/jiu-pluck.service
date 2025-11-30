@@ -7,7 +7,7 @@ Type=simple
 User=www-data
 WorkingDirectory=PROJECT_ROOT
 Environment="PATH=PROJECT_ROOT/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
-ExecStart=PROJECT_ROOT/boot/start_production.sh
+ExecStart=/bin/bash PROJECT_ROOT/boot/start_production.sh
 Restart=always
 RestartSec=10
 StandardOutput=journal
