@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usersApi, type User, type UserUpdate } from '../../api/users'
-import { usePendingTemplates, useReviewTemplate, useCreateTemplate, useAllTemplates, useUpdateTemplate, useDeleteTemplate, type TemplateUpdate } from '../../api/admin'
+import { usePendingTemplates, useReviewTemplate, useCreateTemplate, useAllTemplates, useUpdateTemplate, useDeleteTemplate } from '../../api/admin'
 import type { TimetableTemplateCreate, PeriodTemplate, TimetableTemplateResponse } from '../../api/timetable'
 
 export default function AdminPage() {
@@ -267,61 +267,181 @@ export default function AdminPage() {
         <div className="space-y-6">
           <div className="bg-white shadow rounded-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold">待審核模板</h2>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setTemplateSubTab('pending')}
+                  className={`px-4 py-2 rounded ${
+                    templateSubTab === 'pending'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  待審核
+                </button>
+                <button
+                  onClick={() => setTemplateSubTab('all')}
+                  className={`px-4 py-2 rounded ${
+                    templateSubTab === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  所有模板
+                </button>
+              </div>
               <button
-                onClick={() => setShowCreateTemplate(true)}
+                onClick={() => {
+                  setSelectedTemplate(null)
+                  setTemplateForm({ school: '', name: '', periods: [] })
+                  setShowCreateTemplate(true)
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 建立新模板
               </button>
             </div>
-          {templatesLoading ? (
-            <div className="p-6 text-center text-gray-500">載入中...</div>
-          ) : pendingTemplates && pendingTemplates.length > 0 ? (
-            <div className="divide-y divide-gray-200">
-              {pendingTemplates.map((template) => (
-                <div key={template.id} className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {template.school} - {template.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        提交時間：{template.submitted_at ? new Date(template.submitted_at).toLocaleString('zh-TW') : '-'}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleReviewTemplate(template.id, 'approved')}
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                      >
-                        通過
-                      </button>
-                      <button
-                        onClick={() => handleReviewTemplate(template.id, 'rejected')}
-                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                      >
-                        拒絕
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">節次設定：</h4>
-                    <div className="grid grid-cols-4 gap-2">
-                      {template.periods.map((period, idx) => (
-                        <div key={idx} className="p-2 bg-gray-50 rounded text-sm">
-                          <div className="font-medium">{period.name}</div>
-                          <div className="text-gray-600">{period.start} - {period.end}</div>
+
+            {templateSubTab === 'pending' && (
+              <>
+                {templatesLoading ? (
+                  <div className="p-6 text-center text-gray-500">載入中...</div>
+                ) : pendingTemplates && pendingTemplates.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {pendingTemplates.map((template) => (
+                      <div key={template.id} className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {template.school} - {template.name}
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                              提交時間：{template.submitted_at ? new Date(template.submitted_at).toLocaleString('zh-TW') : '-'}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleReviewTemplate(template.id, 'approved')}
+                              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                            >
+                              通過
+                            </button>
+                            <button
+                              onClick={() => handleReviewTemplate(template.id, 'rejected')}
+                              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                              拒絕
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">節次設定：</h4>
+                          <div className="grid grid-cols-4 gap-2">
+                            {template.periods.map((period, idx) => (
+                              <div key={idx} className="p-2 bg-gray-50 rounded text-sm">
+                                <div className="font-medium">{period.name}</div>
+                                <div className="text-gray-600">{period.start} - {period.end}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-6 text-center text-gray-500">目前沒有待審核的模板</div>
-          )}
+                ) : (
+                  <div className="p-6 text-center text-gray-500">目前沒有待審核的模板</div>
+                )}
+              </>
+            )}
+
+            {templateSubTab === 'all' && (
+              <>
+                {allTemplatesLoading ? (
+                  <div className="p-6 text-center text-gray-500">載入中...</div>
+                ) : allTemplates && allTemplates.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {allTemplates.map((template) => (
+                      <div key={template.id} className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {template.school} - {template.name}
+                            </h3>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <span className={`px-2 py-1 text-xs rounded ${
+                                template.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                template.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {template.status === 'approved' ? '已通過' :
+                                 template.status === 'rejected' ? '已拒絕' : '待審核'}
+                              </span>
+                              <p className="text-sm text-gray-500">
+                                建立時間：{template.created_at ? new Date(template.created_at).toLocaleString('zh-TW') : '-'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                setSelectedTemplate(template)
+                                setTemplateForm({
+                                  school: template.school,
+                                  name: template.name,
+                                  periods: template.periods,
+                                })
+                                setShowCreateTemplate(true)
+                              }}
+                              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              編輯
+                            </button>
+                            {template.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleReviewTemplate(template.id, 'approved')}
+                                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                >
+                                  通過
+                                </button>
+                                <button
+                                  onClick={() => handleReviewTemplate(template.id, 'rejected')}
+                                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                >
+                                  拒絕
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => {
+                                if (confirm('確定要刪除這個模板嗎？')) {
+                                  deleteTemplateMutation.mutate(template.id)
+                                }
+                              }}
+                              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                              刪除
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">節次設定：</h4>
+                          <div className="grid grid-cols-4 gap-2">
+                            {template.periods.map((period, idx) => (
+                              <div key={idx} className="p-2 bg-gray-50 rounded text-sm">
+                                <div className="font-medium">{period.name}</div>
+                                <div className="text-gray-600">{period.start} - {period.end}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-gray-500">目前沒有模板</div>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
