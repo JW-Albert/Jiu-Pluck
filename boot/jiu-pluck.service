@@ -1,15 +1,22 @@
 [Unit]
-Description=Jiu-Pluck API Server
+Description=Jiu-Pluck Application (Frontend + Backend)
 After=network.target
 
 [Service]
 Type=simple
-User=www-data
-WorkingDirectory=PROJECT_ROOT/backend
-Environment="PATH=PROJECT_ROOT/backend/venv/bin"
-ExecStart=PROJECT_ROOT/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+# 注意：如果專案在 /root 目錄下，需要以 root 運行
+# 如果專案在其他位置（如 /opt 或 /srv），可以改為 User=www-data
+User=root
+WorkingDirectory=PROJECT_ROOT
+Environment="PATH=PROJECT_ROOT/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/bin/bash PROJECT_ROOT/boot/start_production.sh
 Restart=always
 RestartSec=10
+StandardOutput=journal
+StandardError=journal
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target

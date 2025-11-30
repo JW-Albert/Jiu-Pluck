@@ -28,6 +28,10 @@ if [ ! -f "$SERVICE_FILE" ]; then
     exit 1
 fi
 
+# 確保啟動腳本有執行權限
+chmod +x "$PROJECT_ROOT/boot/start_production.sh"
+echo "已設定啟動腳本執行權限"
+
 # 讀取專案路徑並替換檔案中的變數
 echo "產生 systemd service 檔案..."
 sed "s|PROJECT_ROOT|$PROJECT_ROOT|g" "$SERVICE_FILE" > "$SYSTEMD_PATH"
