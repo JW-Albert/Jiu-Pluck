@@ -4,7 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=www-data
+# 注意：如果專案在 /root 目錄下，需要以 root 運行
+# 如果專案在其他位置（如 /opt 或 /srv），可以改為 User=www-data
+User=root
 WorkingDirectory=PROJECT_ROOT
 Environment="PATH=PROJECT_ROOT/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
 ExecStart=/bin/bash PROJECT_ROOT/boot/start_production.sh
