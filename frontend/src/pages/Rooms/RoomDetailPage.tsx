@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { roomsApi } from '../../api/rooms'
+import { roomsApi, type MemberFreeSlots } from '../../api/rooms'
 import { eventsApi, PrivateEventCreate, Event } from '../../api/events'
 import { useCurrentUser } from '../../api/users'
 import { timetableApi } from '../../api/timetable'
@@ -365,7 +365,7 @@ export default function RoomDetailPage() {
               )}
               {membersFreeSlots && membersFreeSlots.members && membersFreeSlots.members.length > 0 ? (
                 <div className="space-y-4">
-                  {membersFreeSlots.members.map((member) => (
+                  {membersFreeSlots.members.map((member: MemberFreeSlots) => (
                     <div key={member.user_id} className="border rounded p-3">
                       <h3 className="font-semibold mb-2">{member.name || member.user_id}</h3>
                       {member.slots && member.slots.length > 0 ? (

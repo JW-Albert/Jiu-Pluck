@@ -25,6 +25,18 @@ export interface Webhook {
   created_at: string
 }
 
+export interface MemberFreeSlots {
+  user_id: string
+  name?: string
+  weekday: string
+  slots: Array<{ start: string; end: string }>
+}
+
+export interface RoomMembersFreeSlots {
+  weekday: string
+  members: MemberFreeSlots[]
+}
+
 export const roomsApi = {
   getRooms: async (): Promise<Room[]> => {
     const response = await apiClient.get('/rooms')
@@ -81,7 +93,7 @@ export const roomsApi = {
     return response.data
   },
 
-  getRoomMembersFreeSlots: async (roomId: string, weekday: string, templateId?: number) => {
+  getRoomMembersFreeSlots: async (roomId: string, weekday: string, templateId?: number): Promise<RoomMembersFreeSlots> => {
     const params: any = { weekday }
     if (templateId) {
       params.template_id = templateId
