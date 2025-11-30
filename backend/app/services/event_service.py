@@ -141,6 +141,29 @@ async def get_event_vote_stats(db: AsyncSession, event_id: str) -> Dict:
     return stats
 
 
+async def get_event_voters(db: AsyncSession, event_id: str) -> List[Dict]:
+    """取得活動投票者名單（包含姓名）"""
+    result = await db.execute(select(EventVote).where(EventVote.event_id == event_id))
+    votes = result.scalars().all()
+    
+    if not votes:
+        return []
+    
+    user_ids = [vote.user_id for vote in votes]
+    result = await db.execute(select(User).where(User.id.in_(user_ids)))
+    users = result.scalars().all()
+    user_dict = {u.id: u for u in users}
+    
+    return [
+        {
+            "user_id": vote.user_id,
+            "name": user_dict.get(vote.user_id).name if vote.user_id in user_dict else None,
+            "vote": vote.vote
+        }
+        for vote in votes
+    ]
+
+
 async def get_public_events(
     db: AsyncSession,
     school: Optional[str] = None,

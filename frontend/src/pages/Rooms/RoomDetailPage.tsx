@@ -279,7 +279,35 @@ export default function RoomDetailPage() {
                           {event.description && <p className="text-gray-600 mt-2 line-clamp-2">{event.description}</p>}
                           {event.vote_stats && (
                             <div className="mt-2 text-sm text-gray-600">
-                              投票：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}
+                              <div>投票統計：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}</div>
+                              {event.voters && event.voters.length > 0 && (
+                                <div className="mt-1">
+                                  <span className="font-medium">投票者：</span>
+                                  <div className="ml-2 mt-1 space-y-1">
+                                    {event.voters.map((voter) => (
+                                      <div key={voter.user_id} className="text-xs">
+                                        {voter.name || voter.user_id} -
+                                        <span className={voter.vote === 'yes' ? 'text-green-600' : voter.vote === 'no' ? 'text-red-600' : 'text-yellow-600'}>
+                                          {voter.vote === 'yes' ? ' 是' : voter.vote === 'no' ? ' 否' : ' 可能'}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {event.attendees && event.attendees.length > 0 && (
+                            <div className="mt-2 text-sm text-gray-600">
+                              <span className="font-medium">參與者：</span>
+                              <div className="ml-2 mt-1">
+                                {event.attendees.map((attendee) => (
+                                  <div key={attendee.user_id} className="text-xs">
+                                    {attendee.name || attendee.user_id}
+                                    {attendee.school && <span className="text-gray-500"> ({attendee.school})</span>}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>

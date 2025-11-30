@@ -32,7 +32,7 @@ from app.schemas.event import (
     EventVoteRequest,
     EventVoteResponse
 )
-from app.services.event_service import create_private_event, vote_event, get_event_vote_stats
+from app.services.event_service import create_private_event, vote_event, get_event_vote_stats, get_event_voters, get_event_attendees
 from app.services.discord_service import send_event_notification, send_room_notification
 import json
 
@@ -341,6 +341,11 @@ async def get_room_events(
     for e in events:
         creator = users.get(e.created_by)
         vote_stats = await get_event_vote_stats(db, e.id)
+        # 取得投票者名單（私人活動）
+        voters = await get_event_voters(db, e.id) if e.public == 0 else []
+        # 取得參與者名單（公開活動）
+        attendees = await get_event_attendees(db, e.id) if e.public == 1 else []
+        
         events_list.append({
             "id": e.id,
             "room_id": e.room_id,
@@ -357,7 +362,8 @@ async def get_room_events(
             "created_at": e.created_at,
             "updated_at": e.updated_at,
             "vote_stats": vote_stats,
-            "attendees": []
+            "voters": voters,
+            "attendees": attendees
         })
     
     return events_list

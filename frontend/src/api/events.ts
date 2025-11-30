@@ -38,6 +38,7 @@ export interface Event {
   created_at: string
   updated_at: string
   vote_stats?: { yes: number; no: number; maybe: number }
+  voters?: Array<{ user_id: string; name?: string; vote: 'yes' | 'no' | 'maybe' }>
   attendees?: Array<{ user_id: string; name?: string; school?: string }>
 }
 

@@ -47,6 +47,12 @@ class EventAttendee(BaseModel):
     school: Optional[str] = None
 
 
+class EventVoter(BaseModel):
+    user_id: str
+    name: Optional[str] = None
+    vote: str  # yes / no / maybe
+
+
 class EventResponse(BaseModel):
     id: str
     room_id: Optional[str] = None
@@ -63,6 +69,7 @@ class EventResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     vote_stats: Optional[EventVoteStats] = None
+    voters: List[EventVoter] = []
     attendees: List[EventAttendee] = []
 
 
