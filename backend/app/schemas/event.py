@@ -43,17 +43,6 @@ class EventVoteStats(BaseModel):
     maybe: int
 
 
-class TimeVoteStats(BaseModel):
-    """單個候選時間的投票統計"""
-    time_index: int
-    start: str
-    end: str
-    yes: int
-    no: int
-    maybe: int
-    voters: List[EventVoter] = []
-
-
 class EventAttendee(BaseModel):
     user_id: str
     name: Optional[str] = None
@@ -65,6 +54,17 @@ class EventVoter(BaseModel):
     name: Optional[str] = None
     time_index: int  # 候選時間的索引
     vote: str  # yes / no / maybe
+
+
+class TimeVoteStats(BaseModel):
+    """單個候選時間的投票統計"""
+    time_index: int
+    start: str
+    end: str
+    yes: int
+    no: int
+    maybe: int
+    voters: List[EventVoter] = []
 
 
 class EventResponse(BaseModel):
