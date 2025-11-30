@@ -38,12 +38,24 @@ export interface Event {
   created_at: string
   updated_at: string
   vote_stats?: { yes: number; no: number; maybe: number }
-  voters?: Array<{ user_id: string; name?: string; vote: 'yes' | 'no' | 'maybe' }>
+  time_vote_stats?: TimeVoteStats[]
+  voters?: Array<{ user_id: string; name?: string; time_index: number; vote: 'yes' | 'no' | 'maybe' }>
   attendees?: Array<{ user_id: string; name?: string; school?: string }>
 }
 
 export interface EventVote {
+  time_index: number
   vote: 'yes' | 'no' | 'maybe'
+}
+
+export interface TimeVoteStats {
+  time_index: number
+  start: string
+  end: string
+  yes: number
+  no: number
+  maybe: number
+  voters: Array<{ user_id: string; name?: string; time_index: number; vote: 'yes' | 'no' | 'maybe' }>
 }
 
 export interface EventAttendee {

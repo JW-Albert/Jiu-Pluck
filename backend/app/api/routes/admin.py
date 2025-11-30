@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.core.database import get_db
@@ -6,7 +7,7 @@ from app.api.deps import get_current_admin
 from app.models.user import User
 from app.models.timetable import TimetableTemplate
 from app.schemas.user import UserResponse, UserUpdate, UserListResponse
-from app.schemas.timetable import TimetableTemplateResponse, TimetableTemplateReview, TimetableTemplateCreate
+from app.schemas.timetable import TimetableTemplateResponse, TimetableTemplateReview, TimetableTemplateCreate, TimetableTemplateUpdate
 from app.schemas.auth import MessageResponse
 from app.services.timetable_service import create_template
 from datetime import datetime
@@ -167,7 +168,7 @@ async def delete_user(
     return {"message": "User deleted successfully"}
 
 
-# 課表模板審核
+# 課表模板管理
 @router.get("/templates/pending", response_model=list[TimetableTemplateResponse])
 async def get_pending_templates(
     current_admin: User = Depends(get_current_admin),
@@ -197,6 +198,141 @@ async def get_pending_templates(
         )
         for t in templates
     ]
+
+
+@router.get("/templates", response_model=list[TimetableTemplateResponse])
+async def get_all_templates(
+    status: Optional[str] = Query(None, description="Filter by status: pending, approved, rejected"),
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """取得所有課表模板（管理員）"""
+    query = select(TimetableTemplate)
+    if status:
+        query = query.where(TimetableTemplate.status == status)
+    query = query.order_by(TimetableTemplate.created_at.desc())
+    
+    result = await db.execute(query)
+    templates = result.scalars().all()
+    
+    return [
+        TimetableTemplateResponse(
+            id=t.id,
+            school=t.school,
+            name=t.name,
+            periods=json.loads(t.periods_json),
+            created_by=t.created_by,
+            status=t.status,
+            submitted_at=t.submitted_at,
+            reviewed_at=t.reviewed_at,
+            reviewed_by=t.reviewed_by,
+            created_at=t.created_at,
+            updated_at=t.updated_at
+        )
+        for t in templates
+    ]
+
+
+@router.get("/templates/{template_id}", response_model=TimetableTemplateResponse)
+async def get_template(
+    template_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """取得模板詳情（管理員）"""
+    result = await db.execute(
+        select(TimetableTemplate).where(TimetableTemplate.id == template_id)
+    )
+    template = result.scalar_one_or_none()
+    
+    if not template:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Template not found"
+        )
+    
+    return TimetableTemplateResponse(
+        id=template.id,
+        school=template.school,
+        name=template.name,
+        periods=json.loads(template.periods_json),
+        created_by=template.created_by,
+        status=template.status,
+        submitted_at=template.submitted_at,
+        reviewed_at=template.reviewed_at,
+        reviewed_by=template.reviewed_by,
+        created_at=template.created_at,
+        updated_at=template.updated_at
+    )
+
+
+@router.put("/templates/{template_id}", response_model=TimetableTemplateResponse)
+async def update_template(
+    template_id: int,
+    template_data: TimetableTemplateUpdate,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """更新課表模板（管理員）"""
+    result = await db.execute(
+        select(TimetableTemplate).where(TimetableTemplate.id == template_id)
+    )
+    template = result.scalar_one_or_none()
+    
+    if not template:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Template not found"
+        )
+    
+    # 更新欄位
+    if template_data.school is not None:
+        template.school = template_data.school
+    if template_data.name is not None:
+        template.name = template_data.name
+    if template_data.periods is not None:
+        template.periods_json = json.dumps([p.dict() for p in template_data.periods])
+    
+    await db.commit()
+    await db.refresh(template)
+    
+    return TimetableTemplateResponse(
+        id=template.id,
+        school=template.school,
+        name=template.name,
+        periods=json.loads(template.periods_json),
+        created_by=template.created_by,
+        status=template.status,
+        submitted_at=template.submitted_at,
+        reviewed_at=template.reviewed_at,
+        reviewed_by=template.reviewed_by,
+        created_at=template.created_at,
+        updated_at=template.updated_at
+    )
+
+
+@router.delete("/templates/{template_id}", response_model=MessageResponse)
+async def delete_template(
+    template_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """刪除課表模板（管理員）"""
+    result = await db.execute(
+        select(TimetableTemplate).where(TimetableTemplate.id == template_id)
+    )
+    template = result.scalar_one_or_none()
+    
+    if not template:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Template not found"
+        )
+    
+    await db.delete(template)
+    await db.commit()
+    
+    return {"message": "Template deleted successfully"}
 
 
 @router.post("/templates", response_model=TimetableTemplateResponse)

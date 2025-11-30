@@ -54,17 +54,17 @@ export default function EventDetailPage() {
   }
 
   const voteMutation = useMutation({
-    mutationFn: async (vote: 'yes' | 'no' | 'maybe') => {
+    mutationFn: async ({ timeIndex, vote }: { timeIndex: number; vote: 'yes' | 'no' | 'maybe' }) => {
       if (!event?.room_id) throw new Error('Room ID not found')
-      return eventsApi.voteEvent(event.room_id, eventId!, { vote })
+      return eventsApi.voteEvent(event.room_id, eventId!, { time_index: timeIndex, vote })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', eventId] })
     },
   })
 
-  const handleVote = (vote: 'yes' | 'no' | 'maybe') => {
-    voteMutation.mutate(vote)
+  const handleVote = (timeIndex: number, vote: 'yes' | 'no' | 'maybe') => {
+    voteMutation.mutate({ timeIndex, vote })
   }
 
   if (isLoading) {
@@ -158,51 +158,86 @@ export default function EventDetailPage() {
         </div>
 
         {/* 投票功能（私人活動） */}
-        {isPrivateEvent && isAuthenticated && (
+        {isPrivateEvent && isAuthenticated && event.proposed_times && Array.isArray(event.proposed_times) && event.proposed_times.length > 0 && (
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold mb-3">投票</h3>
-            {event.vote_stats && (
-              <div className="mb-3 text-sm text-gray-600">
-                <div className="font-medium mb-2">統計：是 {event.vote_stats.yes} / 否 {event.vote_stats.no} / 可能 {event.vote_stats.maybe}</div>
-                {event.voters && event.voters.length > 0 && (
-                  <div className="mt-3">
-                    <div className="font-medium mb-2">投票者名單：</div>
-                    <div className="space-y-1">
-                      {event.voters.map((voter) => (
-                        <div key={voter.user_id} className="text-sm">
-                          {voter.name || voter.user_id} - 
-                          <span className={voter.vote === 'yes' ? 'text-green-600 font-medium' : voter.vote === 'no' ? 'text-red-600 font-medium' : 'text-yellow-600 font-medium'}>
-                            {voter.vote === 'yes' ? ' 是' : voter.vote === 'no' ? ' 否' : ' 可能'}
-                          </span>
+            <h3 className="text-lg font-semibold mb-4">投票</h3>
+            <div className="space-y-4">
+              {event.proposed_times.map((time: { start: string; end: string }, timeIndex: number) => {
+                const timeStats = event.time_vote_stats?.find((stats: any) => stats.time_index === timeIndex)
+                const userVote = event.voters?.find((v: any) => v.time_index === timeIndex && v.user_id === currentUser?.id)
+                
+                return (
+                  <div key={timeIndex} className="border rounded p-4 bg-white">
+                    <div className="mb-3">
+                      <div className="font-medium text-gray-900 mb-1">
+                        候選時間 {timeIndex + 1}：
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {new Date(time.start).toLocaleString('zh-TW')} - {new Date(time.end).toLocaleString('zh-TW')}
+                      </div>
+                    </div>
+                    
+                    {timeStats && (
+                      <div className="mb-3 text-sm text-gray-600">
+                        <div className="mb-2">
+                          統計：是 {timeStats.yes} / 否 {timeStats.no} / 可能 {timeStats.maybe}
                         </div>
-                      ))}
+                        {timeStats.voters && timeStats.voters.length > 0 && (
+                          <div className="mt-2">
+                            <div className="font-medium mb-1">投票者：</div>
+                            <div className="space-y-1">
+                              {timeStats.voters.map((voter: any) => (
+                                <div key={`${voter.user_id}-${timeIndex}`} className="text-xs">
+                                  {voter.name || voter.user_id} - 
+                                  <span className={voter.vote === 'yes' ? 'text-green-600 font-medium' : voter.vote === 'no' ? 'text-red-600 font-medium' : 'text-yellow-600 font-medium'}>
+                                    {voter.vote === 'yes' ? ' 是' : voter.vote === 'no' ? ' 否' : ' 可能'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleVote(timeIndex, 'yes')}
+                        disabled={voteMutation.isPending}
+                        className={`px-3 py-1 text-sm rounded disabled:opacity-50 ${
+                          userVote?.vote === 'yes' 
+                            ? 'bg-green-700 text-white' 
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
+                      >
+                        是 {userVote?.vote === 'yes' && '✓'}
+                      </button>
+                      <button
+                        onClick={() => handleVote(timeIndex, 'no')}
+                        disabled={voteMutation.isPending}
+                        className={`px-3 py-1 text-sm rounded disabled:opacity-50 ${
+                          userVote?.vote === 'no' 
+                            ? 'bg-red-700 text-white' 
+                            : 'bg-red-600 text-white hover:bg-red-700'
+                        }`}
+                      >
+                        否 {userVote?.vote === 'no' && '✓'}
+                      </button>
+                      <button
+                        onClick={() => handleVote(timeIndex, 'maybe')}
+                        disabled={voteMutation.isPending}
+                        className={`px-3 py-1 text-sm rounded disabled:opacity-50 ${
+                          userVote?.vote === 'maybe' 
+                            ? 'bg-yellow-700 text-white' 
+                            : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                        }`}
+                      >
+                        可能 {userVote?.vote === 'maybe' && '✓'}
+                      </button>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleVote('yes')}
-                disabled={voteMutation.isPending}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-              >
-                是
-              </button>
-              <button
-                onClick={() => handleVote('no')}
-                disabled={voteMutation.isPending}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-              >
-                否
-              </button>
-              <button
-                onClick={() => handleVote('maybe')}
-                disabled={voteMutation.isPending}
-                className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:opacity-50"
-              >
-                可能
-              </button>
+                )
+              })}
             </div>
           </div>
         )}

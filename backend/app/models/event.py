@@ -35,5 +35,6 @@ class EventVote(Base):
 
     event_id = Column(String, ForeignKey("events.id"), primary_key=True)
     user_id = Column(String, ForeignKey("users.id"), primary_key=True)
+    time_index = Column(Integer, primary_key=True)  # 候選時間的索引（0, 1, 2, ...）
     vote = Column(String, nullable=False)  # yes / no / maybe
 

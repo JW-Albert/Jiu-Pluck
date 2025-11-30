@@ -33,6 +33,12 @@ class TimetableTemplateReview(BaseModel):
     status: str  # "approved" or "rejected"
 
 
+class TimetableTemplateUpdate(BaseModel):
+    school: Optional[str] = None
+    name: Optional[str] = None
+    periods: Optional[List[PeriodTemplate]] = None
+
+
 class TimetableData(BaseModel):
     # 格式: { "monday": [{ "period": "1", "course": "Calculus" }, ...], ... }
     monday: Optional[List[Dict[str, str]]] = None

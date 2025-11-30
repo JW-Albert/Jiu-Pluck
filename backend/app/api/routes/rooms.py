@@ -32,7 +32,7 @@ from app.schemas.event import (
     EventVoteRequest,
     EventVoteResponse
 )
-from app.services.event_service import create_private_event, vote_event, get_event_vote_stats, get_event_voters, get_event_attendees
+from app.services.event_service import create_private_event, vote_event, get_event_vote_stats, get_event_voters, get_event_attendees, get_event_time_vote_stats
 from app.services.discord_service import send_event_notification, send_room_notification
 import json
 
@@ -386,7 +386,7 @@ async def vote_room_event(
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     
-    result = await vote_event(db, event_id, current_user.id, vote_data.vote)
+    result = await vote_event(db, event_id, current_user.id, vote_data.time_index, vote_data.vote)
     
     # 發送 Discord 通知
     try:

@@ -98,9 +98,10 @@ async def vote_event(
     db: AsyncSession,
     event_id: str,
     user_id: str,
+    time_index: int,
     vote: str
 ) -> Dict:
-    """投票"""
+    """投票（針對特定候選時間）"""
     if vote not in ["yes", "no", "maybe"]:
         raise ValueError("Invalid vote value")
     
@@ -110,10 +111,23 @@ async def vote_event(
     if not event:
         raise ValueError("Event not found")
     
+    # 檢查是否有候選時間
+    if not event.proposed_times_json:
+        raise ValueError("Event has no proposed times")
+    
+    import json
+    proposed_times = json.loads(event.proposed_times_json)
+    if time_index < 0 or time_index >= len(proposed_times):
+        raise ValueError("Invalid time_index")
+    
     # 更新或建立投票
     result = await db.execute(
         select(EventVote).where(
-            and_(EventVote.event_id == event_id, EventVote.user_id == user_id)
+            and_(
+                EventVote.event_id == event_id,
+                EventVote.user_id == user_id,
+                EventVote.time_index == time_index
+            )
         )
     )
     existing_vote = result.scalar_one_or_none()
@@ -121,12 +135,12 @@ async def vote_event(
     if existing_vote:
         existing_vote.vote = vote
     else:
-        new_vote = EventVote(event_id=event_id, user_id=user_id, vote=vote)
+        new_vote = EventVote(event_id=event_id, user_id=user_id, time_index=time_index, vote=vote)
         db.add(new_vote)
     
     await db.commit()
     
-    return {"event_id": event_id, "user_id": user_id, "vote": vote}
+    return {"event_id": event_id, "user_id": user_id, "time_index": time_index, "vote": vote}
 
 
 async def get_event_vote_stats(db: AsyncSession, event_id: str) -> Dict:
@@ -142,7 +156,7 @@ async def get_event_vote_stats(db: AsyncSession, event_id: str) -> Dict:
 
 
 async def get_event_voters(db: AsyncSession, event_id: str) -> List[Dict]:
-    """取得活動投票者名單（包含姓名）"""
+    """取得活動投票者名單（包含姓名和時間索引）"""
     result = await db.execute(select(EventVote).where(EventVote.event_id == event_id))
     votes = result.scalars().all()
     
@@ -158,10 +172,59 @@ async def get_event_voters(db: AsyncSession, event_id: str) -> List[Dict]:
         {
             "user_id": vote.user_id,
             "name": user_dict.get(vote.user_id).name if vote.user_id in user_dict else None,
+            "time_index": vote.time_index,
             "vote": vote.vote
         }
         for vote in votes
     ]
+
+
+async def get_event_time_vote_stats(db: AsyncSession, event_id: str, proposed_times: List[Dict]) -> List[Dict]:
+    """取得按候選時間分組的投票統計"""
+    result = await db.execute(select(EventVote).where(EventVote.event_id == event_id))
+    votes = result.scalars().all()
+    
+    # 按 time_index 分組統計
+    time_stats = {}
+    for vote in votes:
+        if vote.time_index not in time_stats:
+            time_stats[vote.time_index] = {"yes": 0, "no": 0, "maybe": 0, "voters": []}
+        time_stats[vote.time_index][vote.vote] = time_stats[vote.time_index].get(vote.vote, 0) + 1
+        time_stats[vote.time_index]["voters"].append(vote)
+    
+    # 取得所有投票者的資訊
+    user_ids = list(set([vote.user_id for vote in votes]))
+    users = {}
+    if user_ids:
+        result = await db.execute(select(User).where(User.id.in_(user_ids)))
+        users_list = result.scalars().all()
+        users = {u.id: u for u in users_list}
+    
+    # 構建結果
+    result_list = []
+    for idx, time_slot in enumerate(proposed_times):
+        stats = time_stats.get(idx, {"yes": 0, "no": 0, "maybe": 0, "voters": []})
+        voters_list = []
+        for vote in stats["voters"]:
+            user = users.get(vote.user_id)
+            voters_list.append({
+                "user_id": vote.user_id,
+                "name": user.name if user else None,
+                "time_index": vote.time_index,
+                "vote": vote.vote
+            })
+        
+        result_list.append({
+            "time_index": idx,
+            "start": time_slot.get("start", ""),
+            "end": time_slot.get("end", ""),
+            "yes": stats["yes"],
+            "no": stats["no"],
+            "maybe": stats["maybe"],
+            "voters": voters_list
+        })
+    
+    return result_list
 
 
 async def get_public_events(

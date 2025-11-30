@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usersApi, type User, type UserUpdate } from '../../api/users'
-import { usePendingTemplates, useReviewTemplate, useCreateTemplate } from '../../api/admin'
-import type { TimetableTemplateCreate, PeriodTemplate } from '../../api/timetable'
+import { usePendingTemplates, useReviewTemplate, useCreateTemplate, useAllTemplates, useUpdateTemplate, useDeleteTemplate, type TemplateUpdate } from '../../api/admin'
+import type { TimetableTemplateCreate, PeriodTemplate, TimetableTemplateResponse } from '../../api/timetable'
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'users' | 'templates'>('users')
+  const [templateSubTab, setTemplateSubTab] = useState<'pending' | 'all'>('pending')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [editForm, setEditForm] = useState<UserUpdate>({})
   const [showCreateTemplate, setShowCreateTemplate] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<TimetableTemplateResponse | null>(null)
   const [templateForm, setTemplateForm] = useState<TimetableTemplateCreate>({
     school: '',
     name: '',
@@ -21,8 +23,11 @@ export default function AdminPage() {
   })
 
   const { data: pendingTemplates, isLoading: templatesLoading } = usePendingTemplates()
+  const { data: allTemplates, isLoading: allTemplatesLoading } = useAllTemplates()
   const reviewMutation = useReviewTemplate()
   const createTemplateMutation = useCreateTemplate()
+  const updateTemplateMutation = useUpdateTemplate()
+  const deleteTemplateMutation = useDeleteTemplate()
   const queryClient = useQueryClient()
 
   const updateUserMutation = useMutation({
@@ -111,13 +116,36 @@ export default function AdminPage() {
       return
     }
 
-    createTemplateMutation.mutate(templateForm, {
-      onSuccess: () => {
-        setShowCreateTemplate(false)
-        setTemplateForm({ school: '', name: '', periods: [] })
-        alert('模板建立成功！')
-      },
-    })
+    if (selectedTemplate) {
+      // 編輯模式
+      updateTemplateMutation.mutate(
+        {
+          templateId: selectedTemplate.id,
+          data: {
+            school: templateForm.school,
+            name: templateForm.name,
+            periods: templateForm.periods,
+          },
+        },
+        {
+          onSuccess: () => {
+            setShowCreateTemplate(false)
+            setSelectedTemplate(null)
+            setTemplateForm({ school: '', name: '', periods: [] })
+            alert('模板更新成功！')
+          },
+        }
+      )
+    } else {
+      // 建立模式
+      createTemplateMutation.mutate(templateForm, {
+        onSuccess: () => {
+          setShowCreateTemplate(false)
+          setTemplateForm({ school: '', name: '', periods: [] })
+          alert('模板建立成功！')
+        },
+      })
+    }
   }
 
   return (
@@ -145,7 +173,7 @@ export default function AdminPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              模板審核
+              模板管理
             </button>
           </nav>
         </div>
@@ -298,12 +326,14 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 建立模板 Modal */}
+      {/* 建立/編輯模板 Modal */}
       {showCreateTemplate && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">建立課表模板</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {selectedTemplate ? '編輯課表模板' : '建立課表模板'}
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">學校名稱 *</label>
@@ -378,6 +408,7 @@ export default function AdminPage() {
                 <button
                   onClick={() => {
                     setShowCreateTemplate(false)
+                    setSelectedTemplate(null)
                     setTemplateForm({ school: '', name: '', periods: [] })
                   }}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
@@ -386,10 +417,12 @@ export default function AdminPage() {
                 </button>
                 <button
                   onClick={handleCreateTemplate}
-                  disabled={createTemplateMutation.isPending}
+                  disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {createTemplateMutation.isPending ? '建立中...' : '建立模板'}
+                  {selectedTemplate
+                    ? (updateTemplateMutation.isPending ? '更新中...' : '更新模板')
+                    : (createTemplateMutation.isPending ? '建立中...' : '建立模板')}
                 </button>
               </div>
             </div>

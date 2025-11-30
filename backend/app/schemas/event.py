@@ -26,12 +26,14 @@ class PublicEventCreate(BaseModel):
 
 
 class EventVoteRequest(BaseModel):
+    time_index: int  # 候選時間的索引（0, 1, 2, ...）
     vote: str  # yes / no / maybe
 
 
 class EventVoteResponse(BaseModel):
     event_id: str
     user_id: str
+    time_index: int
     vote: str
 
 
@@ -39,6 +41,17 @@ class EventVoteStats(BaseModel):
     yes: int
     no: int
     maybe: int
+
+
+class TimeVoteStats(BaseModel):
+    """單個候選時間的投票統計"""
+    time_index: int
+    start: str
+    end: str
+    yes: int
+    no: int
+    maybe: int
+    voters: List[EventVoter] = []
 
 
 class EventAttendee(BaseModel):
@@ -50,6 +63,7 @@ class EventAttendee(BaseModel):
 class EventVoter(BaseModel):
     user_id: str
     name: Optional[str] = None
+    time_index: int  # 候選時間的索引
     vote: str  # yes / no / maybe
 
 
@@ -68,7 +82,8 @@ class EventResponse(BaseModel):
     end_time: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
-    vote_stats: Optional[EventVoteStats] = None
+    vote_stats: Optional[EventVoteStats] = None  # 保留向後兼容，但可能為空
+    time_vote_stats: List[TimeVoteStats] = []  # 按候選時間分組的投票統計
     voters: List[EventVoter] = []
     attendees: List[EventAttendee] = []
 
