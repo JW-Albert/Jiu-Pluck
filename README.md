@@ -7,12 +7,26 @@
 
 ## 功能特色
 
-- **使用者認證**：JWT 認證、Email 驗證
-- **私人房間**：建立房間，邀請朋友一起揪團
+- **使用者認證**：OTP 一次性密碼登入（透過 Email 發送）、Email 驗證
+- **私人房間**：建立房間，使用邀請碼邀請朋友一起揪團
 - **公開活動**：瀏覽和報名公開活動
-- **課表管理**：管理個人課表，自動計算空堂時間
+- **課表管理**：
+  - 管理個人課表，自動計算空堂時間
+  - 支援多種學校課表模板
+  - 使用者可提交模板供管理員審核
+  - 課表時間外以每小時為單位計算空閒時間
+- **活動投票系統**：
+  - 私人活動可設定多個候選時間
+  - 針對每個候選時間分別投票（是/否/可能）
+  - 可設定投票截止時間，時間到自動關閉投票
+  - 查看投票統計和投票者名單
+- **成員空閒時間**：查看房間成員的空閒時間，方便協調活動時間
 - **行事曆同步**：支援 Google Calendar 和 Apple Calendar (CalDAV)
 - **Discord 通知**：房間活動自動推送到 Discord
+- **管理員功能**：
+  - 使用者管理（新增、編輯、刪除）
+  - 模板管理（審核、新增、編輯、刪除）
+  - 查看所有房間和活動
 
 ## 技術棧
 
@@ -158,6 +172,57 @@ npm run dev
 
 **注意**: 環境變數檔案應放在專案根目錄的 `ENV/.env`，範例檔案在 `ENV/.env.example`
 
+## API 端點
+
+### 認證
+- `POST /api/auth/signup` - 使用者註冊
+- `POST /api/auth/verify-email` - Email 驗證
+- `POST /api/auth/request-login-otp` - 請求登入 OTP
+- `POST /api/auth/login` - 使用 OTP 登入
+- `POST /api/auth/refresh` - 刷新 access token
+
+### 課表
+- `GET /api/timetable/templates` - 取得已通過審核的課表模板
+- `POST /api/timetable/templates/submit` - 提交模板供審核
+- `GET /api/timetable` - 取得使用者的課表
+- `POST /api/timetable` - 儲存使用者的課表
+- `GET /api/timetable/free-slots` - 取得空閒時間
+
+### 房間
+- `POST /api/rooms` - 建立房間
+- `GET /api/rooms` - 取得使用者的房間（管理員可查看所有房間）
+- `GET /api/rooms/{room_id}` - 取得房間詳情
+- `POST /api/rooms/join` - 使用邀請碼加入房間
+- `GET /api/rooms/{room_id}/invite-code` - 取得房間邀請碼
+- `POST /api/rooms/{room_id}/regenerate-invite-code` - 重新生成邀請碼
+- `GET /api/rooms/{room_id}/members/free-slots` - 取得房間成員的空閒時間
+- `POST /api/rooms/{room_id}/events` - 建立房間活動（可設定候選時間和投票截止時間）
+- `GET /api/rooms/{room_id}/events` - 取得房間活動（包含投票者和參與者名單）
+- `POST /api/rooms/{room_id}/events/{event_id}/vote` - 對特定候選時間投票
+- `DELETE /api/rooms/{room_id}` - 刪除房間（管理員/房主）
+
+### 活動
+- `GET /api/events/public` - 取得公開活動（管理員可查看所有活動）
+- `POST /api/events/public` - 建立公開活動
+- `GET /api/events/{event_id}` - 取得活動詳情（包含按時間分組的投票統計和投票者）
+- `POST /api/events/{event_id}/join` - 報名公開活動
+- `POST /api/events/{event_id}/leave` - 退出活動
+- `GET /api/events/{event_id}/attendees` - 取得活動參與者
+- `DELETE /api/events/{event_id}` - 刪除活動（管理員/建立者/房主）
+
+### 管理員
+- `GET /api/admin/users` - 列出使用者
+- `GET /api/admin/users/{user_id}` - 取得使用者詳情
+- `PUT /api/admin/users/{user_id}` - 更新使用者
+- `DELETE /api/admin/users/{user_id}` - 刪除使用者
+- `GET /api/admin/templates/pending` - 取得待審核模板
+- `GET /api/admin/templates` - 取得所有模板（可選狀態過濾）
+- `GET /api/admin/templates/{template_id}` - 取得模板詳情
+- `POST /api/admin/templates` - 建立模板（管理員專用）
+- `PUT /api/admin/templates/{template_id}` - 更新模板
+- `DELETE /api/admin/templates/{template_id}` - 刪除模板
+- `POST /api/admin/templates/{template_id}/review` - 審核模板（通過/拒絕）
+
 ## 開發注意事項
 
 1. **資料庫 Migration**：目前使用 SQLAlchemy 自動建立表，後續可使用 Alembic 進行 migration 管理。
@@ -172,12 +237,46 @@ npm run dev
 
 5. **開機自動啟動**：執行 `sudo ./boot/setup_service.sh` 設定 systemd 服務，服務將在開機時自動啟動。
 
+## 主要功能詳情
+
+### 使用者認證
+- 使用 OTP（一次性密碼）登入，密碼透過 Email 發送
+- 不需要儲存密碼
+- Email 驗證後才能啟用帳號
+
+### 課表管理
+- 使用者可以建立並提交課表模板供審核
+- 管理員可以審核、新增、編輯、刪除模板
+- 預設模板：「逢甲大學 - 一般學期」（14 個節次）
+- 根據課表自動計算空堂時間
+- 課表時間外以每小時為單位計算空閒時間
+- 首頁顯示個人時間表
+
+### 房間系統
+- 建立私人房間進行群組活動
+- 使用 8 位數邀請碼邀請成員
+- 查看所有成員的空閒時間
+- 建立活動時可設定多個候選時間
+- 針對每個候選時間分別投票（是/否/可能）
+- 可設定投票截止時間，時間到自動關閉投票功能
+- 查看投票統計和投票者名單
+
+### 活動系統
+- **私人活動**：房間內的活動，支援多候選時間投票
+- **公開活動**：任何人都可以報名的開放活動
+- 活動詳情包含建立者姓名、參與者名單、投票統計
+- 用戶投票後，活動會顯示在時間表上
+
+### 管理員面板
+- 使用者管理（查看、編輯、刪除）
+- 模板管理（審核、新增、編輯、刪除）
+- 查看所有房間和活動（包含私人活動）
+
 ## TODO
 
 - [ ] 實作 Google Calendar OAuth 流程
 - [ ] 實作 Apple Calendar CalDAV 連線
 - [ ] 完善課表模板資料
-- [ ] 實作房間邀請機制
 - [ ] 優化前端 UI/UX
 - [ ] 加入單元測試
 - [ ] 實作 Alembic migration

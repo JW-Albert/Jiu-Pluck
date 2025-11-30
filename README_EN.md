@@ -7,13 +7,27 @@ A comprehensive platform for university students to organize group outings, mana
 
 ## Features
 
-- **Private Group Events**: Create rooms and organize events with voting on proposed times
-- **Public Activities**: Open events that any user can join
-- **Automatic Free Slot Detection**: Automatically detects free time slots based on timetables and calendars
-- **Discord Webhook Notifications**: Real-time notifications for room events
+- **User Authentication**: OTP (One-Time Password) login via email, email verification
+- **Private Rooms**: Create rooms and invite friends using invite codes
+- **Public Activities**: Browse and join open events
+- **Timetable Management**:
+  - Manage personal timetables with automatic free slot calculation
+  - Support for multiple school timetable templates
+  - Users can submit templates for admin review
+  - Free time calculation outside class hours uses hourly intervals
+  - Dashboard displays personal timetable
+- **Event Voting System**:
+  - Private events can have multiple proposed times
+  - Vote on each proposed time separately (yes/no/maybe)
+  - Set vote deadline, automatically closes voting when deadline passes
+  - View voting statistics and voter lists
+- **Member Free Time**: View room members' free time slots for better coordination
 - **Calendar Integration**: Sync with Google Calendar and Apple Calendar (CalDAV)
-- **Timetable Management**: Create and manage class schedules with template support
-- **Admin Panel**: User management and template review system
+- **Discord Notifications**: Automatic notifications for room events
+- **Admin Panel**:
+  - User management (create, edit, delete)
+  - Template management (review, create, edit, delete)
+  - View all rooms and events (including private ones)
 
 ## Technology Stack
 
@@ -210,23 +224,25 @@ The application will be available at:
 
 ### Rooms
 - `POST /api/rooms` - Create a room
-- `GET /api/rooms` - Get user's rooms
+- `GET /api/rooms` - Get user's rooms (admin can see all rooms)
 - `GET /api/rooms/{room_id}` - Get room details
 - `POST /api/rooms/join` - Join room by invite code
+- `GET /api/rooms/{room_id}/invite-code` - Get room invite code
+- `POST /api/rooms/{room_id}/regenerate-invite-code` - Regenerate invite code
 - `GET /api/rooms/{room_id}/members/free-slots` - Get room members' free slots
-- `POST /api/rooms/{room_id}/events` - Create room event
-- `GET /api/rooms/{room_id}/events` - Get room events
-- `POST /api/rooms/{room_id}/events/{event_id}/vote` - Vote on event
-- `DELETE /api/rooms/{room_id}` - Delete room
+- `POST /api/rooms/{room_id}/events` - Create room event (with proposed times and vote deadline)
+- `GET /api/rooms/{room_id}/events` - Get room events (with voters and attendees)
+- `POST /api/rooms/{room_id}/events/{event_id}/vote` - Vote on specific proposed time
+- `DELETE /api/rooms/{room_id}` - Delete room (admin/owner only)
 
 ### Events
-- `GET /api/events/public` - Get public events
+- `GET /api/events/public` - Get public events (admin can see all events)
 - `POST /api/events/public` - Create public event
-- `GET /api/events/{event_id}` - Get event details
+- `GET /api/events/{event_id}` - Get event details (with time-based vote stats and voters)
 - `POST /api/events/{event_id}/join` - Join public event
 - `POST /api/events/{event_id}/leave` - Leave event
 - `GET /api/events/{event_id}/attendees` - Get event attendees
-- `DELETE /api/events/{event_id}` - Delete event
+- `DELETE /api/events/{event_id}` - Delete event (admin/creator/room owner only)
 
 ### Admin
 - `GET /api/admin/users` - List users
@@ -234,8 +250,12 @@ The application will be available at:
 - `PUT /api/admin/users/{user_id}` - Update user
 - `DELETE /api/admin/users/{user_id}` - Delete user
 - `GET /api/admin/templates/pending` - Get pending templates
-- `POST /api/admin/templates/{template_id}/review` - Review template
+- `GET /api/admin/templates` - Get all templates (with optional status filter)
+- `GET /api/admin/templates/{template_id}` - Get template details
 - `POST /api/admin/templates` - Create template (admin only)
+- `PUT /api/admin/templates/{template_id}` - Update template
+- `DELETE /api/admin/templates/{template_id}` - Delete template
+- `POST /api/admin/templates/{template_id}/review` - Review template (approve/reject)
 
 ## Features in Detail
 
@@ -247,26 +267,36 @@ The application will be available at:
 ### Timetable Management
 - Users can create and submit timetable templates for review
 - Administrators can approve/reject templates
-- Administrators can directly create approved templates
+- Administrators can create, edit, and delete templates
 - Default template: "Feng Chia University - General Semester" with 14 periods
 - Automatic free slot calculation based on timetable
+- Free time calculation outside class hours uses hourly intervals
+- Dashboard displays personal timetable
+- Events voted by user are displayed on the timetable
 
 ### Room System
 - Create private rooms for group activities
-- Invite members using invite codes
+- Invite members using 8-character invite codes
 - View all members' free time slots
 - Create events with multiple proposed times
-- Vote on proposed times (yes/no/maybe)
+- Vote on each proposed time separately (yes/no/maybe)
+- Set vote deadline, automatically closes voting when deadline passes
+- View voting statistics and voter lists for each proposed time
 
 ### Event System
-- **Private Events**: Room-based events with voting
+- **Private Events**: Room-based events with time-based voting
+  - Multiple proposed times per event
+  - Vote on each time slot separately
+  - Vote deadline support
+  - Time-based vote statistics
 - **Public Events**: Open events anyone can join
 - Event details include creator name, attendees, and voting statistics
+- Events appear on user's timetable after voting
 
 ### Admin Panel
 - User management (view, edit, delete)
-- Template review and approval
-- Direct template creation
+- Template management (review, create, edit, delete)
+- View all rooms and events (including private ones)
 
 ## Development
 
